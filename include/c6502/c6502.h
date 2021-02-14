@@ -60,7 +60,7 @@ public:
     InvalidOpCode(const u8 opCode) : std::runtime_error("")
     {
         std::stringstream ss;
-        ss << "OpCode not implemented: 0x" << std::hex << unsigned(opCode);
+        ss << "Invalid instruction: 0x" << std::hex << unsigned(opCode);
         m_errorMessage = ss.str();
     }
 
@@ -84,11 +84,39 @@ struct Cpu
     enum OP : u8
     {
         LDA_IM = 0xA9,
+        LDA_ZP = 0xA5,
+        LDX_IM = 0xA2,
+        LDX_ZP = 0xA6,
+        LDY_IM = 0xA0,
+        LDY_ZP = 0xA4,
         TXS = 0x9A,
         NOP = 0xEA
     };
 
-    std::string OpCodeToString(const u8 opCode);
+    static std::string OpCodeToString(const u8 opCode)
+    {
+        switch (opCode)
+        {
+            case OP::LDA_IM:
+                return "LDA_IM";
+            case OP::LDA_ZP:
+                return "LDA_ZP";
+            case OP::LDX_IM:
+                return "LDX_IM";
+            case OP::LDX_ZP:
+                return "LDA_ZP";
+            case OP::LDY_IM:
+                return "LDY_IM";
+            case OP::LDY_ZP:
+                return "LDA_ZP";
+            case OP::TXS:
+                return "TXS";
+            case OP::NOP:
+                return "NOP";
+        }
+
+        throw InvalidOpCode(opCode);
+    }
 
     /* The value of program counter is modified automatically as instructions are executed.
      * The value of the program counter can be modified by executing a jump, a relative branch
@@ -144,6 +172,10 @@ struct Cpu
     /// Reads a 16 bit word from address
     u16 readWord(s32& cycles, const u16 address, const Memory& memory);
 
+    void loadIntoRegister(u8& reg, const u8 value, const u8& zeroFlagReg);
+    void loadImmediate(s32& cycles, Memory& memory, u8& reg);
+    void loadZeroPage(s32& cycles, Memory& memory, u8& reg);
+
     /// Executes an instruction
     void executeInstruction(const OP opCode, s32& cycles, Memory& memory);
 
@@ -161,5 +193,7 @@ inline bool operator!=(const Cpu& lhs, const Cpu& rhs)
 {
     return !(lhs == rhs);
 }
+
+std::ostream& operator<<(std::ostream& os, Cpu const& cpu);
 
 } // namespace c6502

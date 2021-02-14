@@ -33,6 +33,62 @@ public:
         REQUIRE(memory == memoryCopy);
         REQUIRE(cpu == cpuCopy);
     }
+
+    void testLoadImmediate(const Cpu::OP opCode, u8 Cpu::*reg)
+    {
+        GIVEN("Constant is placed after instruction")
+        {
+            const u8 constant = 0x42;
+            memory[0xFFFC] = opCode;
+            memory[0xFFFD] = constant;
+            const s32 cyclesExpected = 2;
+            const s32 PCIncrementsExpected = 2;
+
+            takeSnapshot();
+
+            WHEN(Cpu::OpCodeToString(opCode) + " is executed")
+            {
+                const s32 cyclesUsed = cpu.execute(cyclesExpected, memory);
+
+                THEN("Constant is loaded into index register")
+                {
+                    cpuCopy.PC += PCIncrementsExpected;
+                    cpuCopy.*reg = constant;
+
+                    requireState(cyclesUsed, cyclesExpected);
+                }
+            }
+        }
+    }
+
+    void testLoadZeroPage(const Cpu::OP opCode, u8 Cpu::*reg)
+    {
+        GIVEN("ZeroPage address is placed after instruction")
+        {
+            const u16 zeroPageAddr = 0x0037;
+            const u8 zeroPageData = 0x42;
+            memory[0xFFFC] = opCode;
+            memory[0xFFFD] = zeroPageAddr;
+            memory[zeroPageAddr] = zeroPageData;
+            const s32 cyclesExpected = 3;
+            const s32 PCIncrementsExpected = 2;
+
+            takeSnapshot();
+
+            WHEN(Cpu::OpCodeToString(opCode) + " is executed")
+            {
+                const s32 cyclesUsed = cpu.execute(cyclesExpected, memory);
+
+                THEN("ZeroPage data is loaded into index register")
+                {
+                    cpuCopy.PC += PCIncrementsExpected;
+                    cpuCopy.*reg = zeroPageData;
+
+                    requireState(cyclesUsed, cyclesExpected);
+                }
+            }
+        }
+    }
 };
 
 TEST_CASE_METHOD(CpuFixture, "CPU and memory reset")
@@ -90,31 +146,22 @@ TEST_CASE_METHOD(CpuFixture, "NOP")
     }
 }
 
-TEST_CASE_METHOD(CpuFixture, "LDA_IM")
+TEST_CASE_METHOD(CpuFixture, "LDA")
 {
-    GIVEN("Constant is placed after instruction")
-    {
-        const u8 constant = 0x42;
-        memory[0xFFFC] = Cpu::OP::LDA_IM;
-        memory[0xFFFD] = constant;
-        const s32 cyclesExpected = 2;
-        const s32 PCIncrementsExpected = 2;
+    testLoadImmediate(Cpu::OP::LDA_IM, &Cpu::A);
+    testLoadZeroPage(Cpu::OP::LDA_ZP, &Cpu::A);
+}
 
-        takeSnapshot();
+TEST_CASE_METHOD(CpuFixture, "LDX")
+{
+    testLoadImmediate(Cpu::OP::LDX_IM, &Cpu::X);
+    testLoadZeroPage(Cpu::OP::LDX_ZP, &Cpu::X);
+}
 
-        WHEN("LDA_IM is executed")
-        {
-            const s32 cyclesUsed = cpu.execute(cyclesExpected, memory);
-
-            THEN("Constant is loaded into A")
-            {
-                cpuCopy.PC += PCIncrementsExpected;
-                cpuCopy.A = constant;
-
-                requireState(cyclesUsed, cyclesExpected);
-            }
-        }
-    }
+TEST_CASE_METHOD(CpuFixture, "LDY")
+{
+    testLoadImmediate(Cpu::OP::LDY_IM, &Cpu::Y);
+    testLoadZeroPage(Cpu::OP::LDY_ZP, &Cpu::Y);
 }
 
 TEST_CASE_METHOD(CpuFixture, "TXS")

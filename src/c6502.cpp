@@ -8,21 +8,6 @@ std::ostream& operator<<(std::ostream& os, Cpu const& cpu)
     return os;
 }
 
-std::string Cpu::OpCodeToString(const u8 opCode)
-{
-    switch (opCode)
-    {
-        case OP::LDA_IM:
-            return "LDA_IM";
-        case OP::TXS:
-            return "TXS";
-        case OP::NOP:
-            return "NOP";
-    }
-
-    throw InvalidOpCode(opCode);
-}
-
 std::string Cpu::toString() const
 {
     std::stringstream ss;
@@ -56,6 +41,8 @@ u8 Cpu::fetchByte(s32& cycles, const Memory& memory)
     PC++;
     cycles--;
 
+    std::cout << "Fetch: " << std::hex << unsigned(data) <<  std::endl;
+
     return data;
 }
 
@@ -65,6 +52,8 @@ u8 Cpu::fetchword(s32& cycles, const Memory& memory)
     const u8 highByte = fetchByte(cycles, memory);
     const u16 data = (highByte << 8) | lowByte;
 
+    std::cout << "Fetch: " << std::hex << unsigned(data) <<  std::endl;
+
     return data;
 }
 
@@ -72,6 +61,8 @@ u8 Cpu::readByte(s32& cycles, const u16 address, const Memory& memory)
 {
     const u8 data = memory[address];
     cycles--;
+
+    std::cout << "Read:  " << std::hex << unsigned(data) <<  std::endl;
 
     return data;
 }
@@ -82,20 +73,64 @@ u16 Cpu::readWord(s32& cycles, const u16 address, const Memory& memory)
     const u8 highByte = readByte(cycles, address + 1, memory);
     const u16 data = (highByte << 8) | lowByte;
 
+    std::cout << "Read:  " << std::hex << unsigned(data) <<  std::endl;
+
     return data;
+}
+
+void Cpu::loadIntoRegister(u8& reg, const u8 value, const u8& zeroFlagReg)
+{
+    reg = value;
+    Z = (zeroFlagReg == 0);
+    N = reg & (1 << 7);
+}
+
+void Cpu::loadImmediate(s32& cycles, Memory& memory, u8& reg)
+{
+    const u8 value = fetchByte(cycles, memory);
+    loadIntoRegister(reg, value, reg);
+}
+
+void Cpu::loadZeroPage(s32& cycles, Memory& memory, u8& reg)
+{
+    const u8 ZPAddr = fetchByte(cycles, memory);
+    const u8 value = readByte(cycles, ZPAddr, memory);
+    loadIntoRegister(reg, value, reg);
 }
 
 void Cpu::executeInstruction(const OP opCode, s32& cycles, Memory& memory)
 {
-    std::cout << "Ins: " << OpCodeToString(opCode) << '\n';
+    std::cout << "Ins:   " << OpCodeToString(opCode) << '\n';
     switch (opCode)
     {
         case OP::LDA_IM:
         {
-            const u8 value = fetchByte(cycles, memory);
-            A = value;
-            Z = (A == 0);
-            N = A & (1 << 7);
+            loadImmediate(cycles, memory, A);
+            break;
+        }
+        case OP::LDA_ZP:
+        {
+            loadZeroPage(cycles, memory, A);
+            break;
+        }
+        case OP::LDX_IM:
+        {
+            loadImmediate(cycles, memory, X);
+            break;
+        }
+        case OP::LDX_ZP:
+        {
+            loadZeroPage(cycles, memory, X);
+            break;
+        }
+        case OP::LDY_IM:
+        {
+            loadImmediate(cycles, memory, Y);
+            break;
+        }
+        case OP::LDY_ZP:
+        {
+            loadZeroPage(cycles, memory, Y);
             break;
         }
         case OP::TXS:
