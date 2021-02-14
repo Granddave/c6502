@@ -5,14 +5,14 @@
 #include <iostream>
 #include <sstream>
 
+namespace c6502
+{
 using u32 = std::uint32_t;
 using s32 = std::int32_t;
 
 using u8 = std::uint8_t;
 using u16 = std::uint16_t;
 
-namespace c6502
-{
 struct Memory
 {
     /* The first 256 byte page of memory ($0000-$00FF) is referred to as 'Zero Page'
@@ -85,10 +85,13 @@ struct Cpu
     {
         LDA_IM = 0xA9,
         LDA_ZP = 0xA5,
+        LDA_ZPX = 0xB5,
         LDX_IM = 0xA2,
         LDX_ZP = 0xA6,
+        LDX_ZPY = 0xB6,
         LDY_IM = 0xA0,
         LDY_ZP = 0xA4,
+        LDY_ZPX = 0xB4,
         TXS = 0x9A,
         NOP = 0xEA
     };
@@ -101,14 +104,20 @@ struct Cpu
                 return "LDA_IM";
             case OP::LDA_ZP:
                 return "LDA_ZP";
+            case OP::LDA_ZPX:
+                return "LDA_ZPX";
             case OP::LDX_IM:
                 return "LDX_IM";
             case OP::LDX_ZP:
-                return "LDA_ZP";
+                return "LDX_ZP";
+            case OP::LDX_ZPY:
+                return "LDX_ZPY";
+            case OP::LDY_ZPX:
+                return "LDY_ZPX";
             case OP::LDY_IM:
                 return "LDY_IM";
             case OP::LDY_ZP:
-                return "LDA_ZP";
+                return "LDY_ZP";
             case OP::TXS:
                 return "TXS";
             case OP::NOP:
@@ -160,10 +169,10 @@ struct Cpu
     /// Resets the CPU and memory to their initialized state
     void reset(Memory& memory);
 
-    /// Fetches a byte from specified address and increments the program counter
+    /// Reads a byte from specified address and increments the program counter
     u8 fetchByte(s32& cycles, const Memory& memory);
 
-    /// Fetches a 16 bit word from specified address and increments the program counter
+    /// Reads a 16 bit word from specified address and increments the program counter
     u8 fetchword(s32& cycles, const Memory& memory);
 
     /// Reads a byte from address
@@ -175,12 +184,16 @@ struct Cpu
     void loadIntoRegister(u8& reg, const u8 value, const u8& zeroFlagReg);
     void loadImmediate(s32& cycles, Memory& memory, u8& reg);
     void loadZeroPage(s32& cycles, Memory& memory, u8& reg);
+    void loadZeroPageOffset(s32& cycles, Memory& memory, u8& reg, u8& offsetReg);
 
     /// Executes an instruction
     void executeInstruction(const OP opCode, s32& cycles, Memory& memory);
 
     /// Executes n cycles
     s32 execute(s32 cycles, Memory& memory);
+
+    /// Executes in an infinite loop
+    void executeInfinite(Memory& memory);
 };
 
 inline bool operator==(const Cpu& lhs, const Cpu& rhs)

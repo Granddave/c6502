@@ -10,6 +10,7 @@ std::ostream& operator<<(std::ostream& os, Cpu const& cpu)
 
 std::string Cpu::toString() const
 {
+
     std::stringstream ss;
     ss << "PC: 0x" << std::hex << unsigned(PC) << '\n'
        << "SP: 0x" << std::hex << unsigned(SP) << '\n'
@@ -23,6 +24,7 @@ std::string Cpu::toString() const
 
 void Cpu::reset(Memory& memory)
 {
+    std::cout << "-- CPU reset --" << std::endl;
     memory.initialize();
 
     PC = c_reset_vector;
@@ -41,7 +43,7 @@ u8 Cpu::fetchByte(s32& cycles, const Memory& memory)
     PC++;
     cycles--;
 
-    std::cout << "Fetch: " << std::hex << unsigned(data) <<  std::endl;
+    std::cout << "Fetch: " << std::hex << unsigned(data) << std::endl;
 
     return data;
 }
@@ -52,7 +54,7 @@ u8 Cpu::fetchword(s32& cycles, const Memory& memory)
     const u8 highByte = fetchByte(cycles, memory);
     const u16 data = (highByte << 8) | lowByte;
 
-    std::cout << "Fetch: " << std::hex << unsigned(data) <<  std::endl;
+    std::cout << "Fetch: " << std::hex << unsigned(data) << std::endl;
 
     return data;
 }
@@ -62,7 +64,7 @@ u8 Cpu::readByte(s32& cycles, const u16 address, const Memory& memory)
     const u8 data = memory[address];
     cycles--;
 
-    std::cout << "Read:  " << std::hex << unsigned(data) <<  std::endl;
+    std::cout << "Read:  " << std::hex << unsigned(data) << std::endl;
 
     return data;
 }
@@ -73,7 +75,7 @@ u16 Cpu::readWord(s32& cycles, const u16 address, const Memory& memory)
     const u8 highByte = readByte(cycles, address + 1, memory);
     const u16 data = (highByte << 8) | lowByte;
 
-    std::cout << "Read:  " << std::hex << unsigned(data) <<  std::endl;
+    std::cout << "Read:  " << std::hex << unsigned(data) << std::endl;
 
     return data;
 }
@@ -98,6 +100,19 @@ void Cpu::loadZeroPage(s32& cycles, Memory& memory, u8& reg)
     loadIntoRegister(reg, value, reg);
 }
 
+// TODO: Generalize for X and Y
+void Cpu::loadZeroPageOffset(s32& cycles, Memory& memory, u8& reg, u8& offsetReg)
+{
+    const u8 ZPAddr = fetchByte(cycles, memory);
+
+    /// Should handle wrap around automatically since both are u8's
+    const u8 ZPAddrWithOffset = ZPAddr + offsetReg;
+    cycles--;
+
+    const u8 value = readByte(cycles, ZPAddrWithOffset, memory);
+    loadIntoRegister(reg, value, reg);
+}
+
 void Cpu::executeInstruction(const OP opCode, s32& cycles, Memory& memory)
 {
     std::cout << "Ins:   " << OpCodeToString(opCode) << '\n';
@@ -113,6 +128,11 @@ void Cpu::executeInstruction(const OP opCode, s32& cycles, Memory& memory)
             loadZeroPage(cycles, memory, A);
             break;
         }
+        case OP::LDA_ZPX:
+        {
+            loadZeroPageOffset(cycles, memory, A, X);
+            break;
+        }
         case OP::LDX_IM:
         {
             loadImmediate(cycles, memory, X);
@@ -123,6 +143,11 @@ void Cpu::executeInstruction(const OP opCode, s32& cycles, Memory& memory)
             loadZeroPage(cycles, memory, X);
             break;
         }
+        case OP::LDX_ZPY:
+        {
+            loadZeroPageOffset(cycles, memory, X, Y);
+            break;
+        }
         case OP::LDY_IM:
         {
             loadImmediate(cycles, memory, Y);
@@ -131,6 +156,11 @@ void Cpu::executeInstruction(const OP opCode, s32& cycles, Memory& memory)
         case OP::LDY_ZP:
         {
             loadZeroPage(cycles, memory, Y);
+            break;
+        }
+        case OP::LDY_ZPX:
+        {
+            loadZeroPageOffset(cycles, memory, Y, X);
             break;
         }
         case OP::TXS:
@@ -164,6 +194,20 @@ s32 Cpu::execute(s32 cycles, Memory& memory)
 
     const s32 executedCycles = requestedCycles - cycles;
     return executedCycles;
+}
+
+void Cpu::executeInfinite(Memory& memory)
+{
+    while (true)
+    {
+        s32 dummy = 0xFF;
+
+        // Fetch instruction from memory
+        const u8 byte = fetchByte(dummy, memory);
+        const auto ins = static_cast<OP>(byte);
+
+        executeInstruction(ins, dummy, memory);
+    }
 }
 
 } // namespace c6502

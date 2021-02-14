@@ -27,9 +27,8 @@ public:
     }
 
     /// Checks that the current parts are the same as the modified copies
-    void requireState(const s32 cyclesUsed, const s32 cyclesExpected)
+    void requireState() const
     {
-        REQUIRE(cyclesUsed == cyclesExpected);
         REQUIRE(memory == memoryCopy);
         REQUIRE(cpu == cpuCopy);
     }
@@ -55,7 +54,8 @@ public:
                     cpuCopy.PC += PCIncrementsExpected;
                     cpuCopy.*reg = constant;
 
-                    requireState(cyclesUsed, cyclesExpected);
+                    REQUIRE(cyclesUsed == cyclesExpected);
+                    requireState();
                 }
             }
         }
@@ -84,7 +84,43 @@ public:
                     cpuCopy.PC += PCIncrementsExpected;
                     cpuCopy.*reg = zeroPageData;
 
-                    requireState(cyclesUsed, cyclesExpected);
+                    REQUIRE(cyclesUsed == cyclesExpected);
+                    requireState();
+                }
+            }
+        }
+    }
+
+    void testLoadZeroPageOffset(const Cpu::OP opCode, u8 Cpu::*reg, u8 Cpu::*offsetReg)
+    {
+        GIVEN("ZeroPage address is placed after instruction and offset register is set")
+        {
+            cpu.*offsetReg = GENERATE(0x01, 0xFF);
+            const u16 zeroPageAddr = 0x0037;
+
+            /// Handles zero page wrap around
+            const u16 zeroPageAddrWithOffset = (zeroPageAddr + cpu.*offsetReg) & 0x00FF;
+            const u8 zeroPageData = 0x42;
+            memory[0xFFFC] = opCode;
+            memory[0xFFFD] = zeroPageAddr;
+            memory[zeroPageAddrWithOffset] = zeroPageData;
+
+            const s32 cyclesExpected = 4;
+            const s32 PCIncrementsExpected = 2;
+
+            takeSnapshot();
+
+            WHEN(Cpu::OpCodeToString(opCode) + " is executed")
+            {
+                const s32 cyclesUsed = cpu.execute(cyclesExpected, memory);
+
+                THEN("ZeroPage data is loaded into index register")
+                {
+                    cpuCopy.PC += PCIncrementsExpected;
+                    cpuCopy.*reg = zeroPageData;
+
+                    REQUIRE(cyclesUsed == cyclesExpected);
+                    requireState();
                 }
             }
         }
@@ -123,11 +159,39 @@ TEST_CASE_METHOD(CpuFixture, "CPU and memory reset")
     REQUIRE(memory == memoryCopy);
 }
 
+TEST_CASE_METHOD(CpuFixture, "No cycles")
+{
+    GIVEN("A reset CPU")
+    {
+        const s32 cyclesExpected = 0;
+
+        takeSnapshot();
+
+        WHEN("No cycles is executed")
+        {
+            const s32 cyclesUsed = cpu.execute(cyclesExpected, memory);
+
+            THEN("Nothing happens")
+            {
+                REQUIRE(cyclesUsed == cyclesExpected);
+                requireState();
+            }
+        }
+    }
+}
+
+TEST_CASE_METHOD(CpuFixture, "Execute invalid instruction result in exception")
+{
+    REQUIRE_THROWS_AS(cpu.execute(1, memory), InvalidOpCode);
+}
+
 TEST_CASE_METHOD(CpuFixture, "NOP")
 {
     GIVEN("Next instruction is NOP")
     {
         memory[0xFFFC] = Cpu::OP::NOP;
+
+        const s32 PCIncrementsExpected = 1;
         const s32 cyclesExpected = 2;
 
         takeSnapshot();
@@ -138,9 +202,10 @@ TEST_CASE_METHOD(CpuFixture, "NOP")
 
             THEN("Program counter is incremented")
             {
-                cpuCopy.PC++;
+                cpuCopy.PC += PCIncrementsExpected;
 
-                requireState(cyclesUsed, cyclesExpected);
+                REQUIRE(cyclesUsed == cyclesExpected);
+                requireState();
             }
         }
     }
@@ -150,18 +215,21 @@ TEST_CASE_METHOD(CpuFixture, "LDA")
 {
     testLoadImmediate(Cpu::OP::LDA_IM, &Cpu::A);
     testLoadZeroPage(Cpu::OP::LDA_ZP, &Cpu::A);
+    testLoadZeroPageOffset(Cpu::OP::LDA_ZPX, &Cpu::A, &Cpu::X);
 }
 
 TEST_CASE_METHOD(CpuFixture, "LDX")
 {
     testLoadImmediate(Cpu::OP::LDX_IM, &Cpu::X);
     testLoadZeroPage(Cpu::OP::LDX_ZP, &Cpu::X);
+    testLoadZeroPageOffset(Cpu::OP::LDX_ZPY, &Cpu::X, &Cpu::Y);
 }
 
 TEST_CASE_METHOD(CpuFixture, "LDY")
 {
     testLoadImmediate(Cpu::OP::LDY_IM, &Cpu::Y);
     testLoadZeroPage(Cpu::OP::LDY_ZP, &Cpu::Y);
+    testLoadZeroPageOffset(Cpu::OP::LDY_ZPX, &Cpu::Y, &Cpu::X);
 }
 
 TEST_CASE_METHOD(CpuFixture, "TXS")
@@ -170,6 +238,8 @@ TEST_CASE_METHOD(CpuFixture, "TXS")
     {
         cpu.X = 0x42;
         memory[0xFFFC] = Cpu::OP::TXS;
+
+        const s32 PCIncrementsExpected = 1;
         const s32 cyclesExpected = 2;
 
         takeSnapshot();
@@ -180,10 +250,11 @@ TEST_CASE_METHOD(CpuFixture, "TXS")
 
             THEN("Program counter is incremented and SP = X")
             {
-                cpuCopy.PC++;
+                cpuCopy.PC += PCIncrementsExpected;
                 cpuCopy.SP = cpuCopy.X;
 
-                requireState(cyclesUsed, cyclesExpected);
+                REQUIRE(cyclesUsed == cyclesExpected);
+                requireState();
             }
         }
     }
