@@ -86,12 +86,15 @@ struct Cpu
         LDA_IM = 0xA9,
         LDA_ZP = 0xA5,
         LDA_ZPX = 0xB5,
+        LDA_ABS = 0xAD,
         LDX_IM = 0xA2,
         LDX_ZP = 0xA6,
         LDX_ZPY = 0xB6,
+        LDX_ABS = 0xAE,
         LDY_IM = 0xA0,
         LDY_ZP = 0xA4,
         LDY_ZPX = 0xB4,
+        LDY_ABS = 0xAC,
         TXS = 0x9A,
         NOP = 0xEA
     };
@@ -106,18 +109,24 @@ struct Cpu
                 return "LDA_ZP";
             case OP::LDA_ZPX:
                 return "LDA_ZPX";
+            case OP::LDA_ABS:
+                return "LDA_ABS";
             case OP::LDX_IM:
                 return "LDX_IM";
             case OP::LDX_ZP:
                 return "LDX_ZP";
             case OP::LDX_ZPY:
                 return "LDX_ZPY";
+            case OP::LDX_ABS:
+                return "LDX_ABS";
             case OP::LDY_ZPX:
                 return "LDY_ZPX";
             case OP::LDY_IM:
                 return "LDY_IM";
             case OP::LDY_ZP:
                 return "LDY_ZP";
+            case OP::LDY_ABS:
+                return "LDY_ABS";
             case OP::TXS:
                 return "TXS";
             case OP::NOP:
@@ -173,7 +182,7 @@ struct Cpu
     u8 fetchByte(s32& cycles, const Memory& memory);
 
     /// Reads a 16 bit word from specified address and increments the program counter
-    u8 fetchword(s32& cycles, const Memory& memory);
+    u16 fetchWord(s32& cycles, const Memory& memory);
 
     /// Reads a byte from address
     u8 readByte(s32& cycles, const u16 address, const Memory& memory);
@@ -182,9 +191,11 @@ struct Cpu
     u16 readWord(s32& cycles, const u16 address, const Memory& memory);
 
     void loadIntoRegister(u8& reg, const u8 value, const u8& zeroFlagReg);
+
     void loadImmediate(s32& cycles, Memory& memory, u8& reg);
     void loadZeroPage(s32& cycles, Memory& memory, u8& reg);
     void loadZeroPageOffset(s32& cycles, Memory& memory, u8& reg, u8& offsetReg);
+    void loadAbsolute(s32& cycles, Memory& memory, u8& reg, const u8 offset = 0x00);
 
     /// Executes an instruction
     void executeInstruction(const OP opCode, s32& cycles, Memory& memory);

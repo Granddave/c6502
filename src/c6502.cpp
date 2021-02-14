@@ -10,7 +10,6 @@ std::ostream& operator<<(std::ostream& os, Cpu const& cpu)
 
 std::string Cpu::toString() const
 {
-
     std::stringstream ss;
     ss << "PC: 0x" << std::hex << unsigned(PC) << '\n'
        << "SP: 0x" << std::hex << unsigned(SP) << '\n'
@@ -48,7 +47,7 @@ u8 Cpu::fetchByte(s32& cycles, const Memory& memory)
     return data;
 }
 
-u8 Cpu::fetchword(s32& cycles, const Memory& memory)
+u16 Cpu::fetchWord(s32& cycles, const Memory& memory)
 {
     const u8 lowByte = fetchByte(cycles, memory);
     const u8 highByte = fetchByte(cycles, memory);
@@ -84,7 +83,7 @@ void Cpu::loadIntoRegister(u8& reg, const u8 value, const u8& zeroFlagReg)
 {
     reg = value;
     Z = (zeroFlagReg == 0);
-    N = reg & (1 << 7);
+    N = (reg & (1 << 7)) != 0;
 }
 
 void Cpu::loadImmediate(s32& cycles, Memory& memory, u8& reg)
@@ -100,7 +99,6 @@ void Cpu::loadZeroPage(s32& cycles, Memory& memory, u8& reg)
     loadIntoRegister(reg, value, reg);
 }
 
-// TODO: Generalize for X and Y
 void Cpu::loadZeroPageOffset(s32& cycles, Memory& memory, u8& reg, u8& offsetReg)
 {
     const u8 ZPAddr = fetchByte(cycles, memory);
@@ -110,6 +108,21 @@ void Cpu::loadZeroPageOffset(s32& cycles, Memory& memory, u8& reg, u8& offsetReg
     cycles--;
 
     const u8 value = readByte(cycles, ZPAddrWithOffset, memory);
+    loadIntoRegister(reg, value, reg);
+}
+
+void Cpu::loadAbsolute(s32& cycles, Memory& memory, u8& reg, const u8 offset)
+{
+    const u16 absoluteAddr = fetchWord(cycles, memory);
+    const u16 absoluteAddrWithOffset = absoluteAddr + offset;
+
+    const bool crossedPageBoundary = (absoluteAddr & 0xFF00) != (absoluteAddrWithOffset & 0xFF00);
+    if (crossedPageBoundary)
+    {
+        cycles--;
+    }
+
+    const u8 value = readByte(cycles, absoluteAddrWithOffset, memory);
     loadIntoRegister(reg, value, reg);
 }
 
@@ -133,6 +146,11 @@ void Cpu::executeInstruction(const OP opCode, s32& cycles, Memory& memory)
             loadZeroPageOffset(cycles, memory, A, X);
             break;
         }
+        case OP::LDA_ABS:
+        {
+            loadAbsolute(cycles, memory, A);
+            break;
+        }
         case OP::LDX_IM:
         {
             loadImmediate(cycles, memory, X);
@@ -148,6 +166,11 @@ void Cpu::executeInstruction(const OP opCode, s32& cycles, Memory& memory)
             loadZeroPageOffset(cycles, memory, X, Y);
             break;
         }
+        case OP::LDX_ABS:
+        {
+            loadAbsolute(cycles, memory, X);
+            break;
+        }
         case OP::LDY_IM:
         {
             loadImmediate(cycles, memory, Y);
@@ -161,6 +184,11 @@ void Cpu::executeInstruction(const OP opCode, s32& cycles, Memory& memory)
         case OP::LDY_ZPX:
         {
             loadZeroPageOffset(cycles, memory, Y, X);
+            break;
+        }
+        case OP::LDY_ABS:
+        {
+            loadAbsolute(cycles, memory, Y);
             break;
         }
         case OP::TXS:

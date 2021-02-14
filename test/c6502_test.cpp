@@ -37,7 +37,7 @@ public:
     {
         GIVEN("Constant is placed after instruction")
         {
-            const u8 constant = 0x42;
+            const u8 constant = GENERATE(0x00, 0x42, 0xFF);
             memory[0xFFFC] = opCode;
             memory[0xFFFD] = constant;
             const s32 cyclesExpected = 2;
@@ -54,6 +54,15 @@ public:
                     cpuCopy.PC += PCIncrementsExpected;
                     cpuCopy.*reg = constant;
 
+                    if (cpuCopy.*reg & 0x80)
+                    {
+                        cpuCopy.N = 1;
+                    }
+                    else if (cpuCopy.*reg == 0x00)
+                    {
+                        cpuCopy.Z = 1;
+                    }
+
                     REQUIRE(cyclesUsed == cyclesExpected);
                     requireState();
                 }
@@ -66,7 +75,7 @@ public:
         GIVEN("ZeroPage address is placed after instruction")
         {
             const u16 zeroPageAddr = 0x0037;
-            const u8 zeroPageData = 0x42;
+            const u8 zeroPageData = GENERATE(0x00, 0x42, 0xFF);
             memory[0xFFFC] = opCode;
             memory[0xFFFD] = zeroPageAddr;
             memory[zeroPageAddr] = zeroPageData;
@@ -84,6 +93,15 @@ public:
                     cpuCopy.PC += PCIncrementsExpected;
                     cpuCopy.*reg = zeroPageData;
 
+                    if (cpuCopy.*reg & 0x80)
+                    {
+                        cpuCopy.N = 1;
+                    }
+                    else if (cpuCopy.*reg == 0x00)
+                    {
+                        cpuCopy.Z = 1;
+                    }
+
                     REQUIRE(cyclesUsed == cyclesExpected);
                     requireState();
                 }
@@ -100,7 +118,7 @@ public:
 
             /// Handles zero page wrap around
             const u16 zeroPageAddrWithOffset = (zeroPageAddr + cpu.*offsetReg) & 0x00FF;
-            const u8 zeroPageData = 0x42;
+            const u8 zeroPageData = GENERATE(0x00, 0x42, 0xFF);
             memory[0xFFFC] = opCode;
             memory[0xFFFD] = zeroPageAddr;
             memory[zeroPageAddrWithOffset] = zeroPageData;
@@ -118,6 +136,56 @@ public:
                 {
                     cpuCopy.PC += PCIncrementsExpected;
                     cpuCopy.*reg = zeroPageData;
+
+                    if (cpuCopy.*reg & 0x80)
+                    {
+                        cpuCopy.N = 1;
+                    }
+                    else if (cpuCopy.*reg == 0x00)
+                    {
+                        cpuCopy.Z = 1;
+                    }
+
+                    REQUIRE(cyclesUsed == cyclesExpected);
+                    requireState();
+                }
+            }
+        }
+    }
+
+    void testLoadAbsolute(const Cpu::OP opCode, u8 Cpu::*reg)
+    {
+        GIVEN("Absolute address is placed after instruction")
+        {
+            const u16 absoluteAddr = 0xABCD;
+            const u8 data = GENERATE(0x00, 0x42, 0xFF);
+            memory[0xFFFC] = opCode;
+            memory[0xFFFD] = absoluteAddr & 0x00FF;
+            memory[0xFFFE] = (absoluteAddr >> 8) & 0x00FF;
+            memory[absoluteAddr] = data;
+
+            const s32 PCIncrementsExpected = 3;
+            const s32 cyclesExpected = 4;
+
+            takeSnapshot();
+
+            WHEN(Cpu::OpCodeToString(opCode) + " is executed")
+            {
+                const s32 cyclesUsed = cpu.execute(cyclesExpected, memory);
+
+                THEN("Absolute addressed data is loaded into index register")
+                {
+                    cpuCopy.PC += PCIncrementsExpected;
+                    cpuCopy.*reg = data;
+
+                    if (cpuCopy.*reg & 0x80)
+                    {
+                        cpuCopy.N = 1;
+                    }
+                    else if (cpuCopy.*reg == 0x00)
+                    {
+                        cpuCopy.Z = 1;
+                    }
 
                     REQUIRE(cyclesUsed == cyclesExpected);
                     requireState();
@@ -216,6 +284,7 @@ TEST_CASE_METHOD(CpuFixture, "LDA")
     testLoadImmediate(Cpu::OP::LDA_IM, &Cpu::A);
     testLoadZeroPage(Cpu::OP::LDA_ZP, &Cpu::A);
     testLoadZeroPageOffset(Cpu::OP::LDA_ZPX, &Cpu::A, &Cpu::X);
+    testLoadAbsolute(Cpu::OP::LDA_ABS, &Cpu::A);
 }
 
 TEST_CASE_METHOD(CpuFixture, "LDX")
@@ -223,6 +292,7 @@ TEST_CASE_METHOD(CpuFixture, "LDX")
     testLoadImmediate(Cpu::OP::LDX_IM, &Cpu::X);
     testLoadZeroPage(Cpu::OP::LDX_ZP, &Cpu::X);
     testLoadZeroPageOffset(Cpu::OP::LDX_ZPY, &Cpu::X, &Cpu::Y);
+    testLoadAbsolute(Cpu::OP::LDX_ABS, &Cpu::X);
 }
 
 TEST_CASE_METHOD(CpuFixture, "LDY")
@@ -230,6 +300,7 @@ TEST_CASE_METHOD(CpuFixture, "LDY")
     testLoadImmediate(Cpu::OP::LDY_IM, &Cpu::Y);
     testLoadZeroPage(Cpu::OP::LDY_ZP, &Cpu::Y);
     testLoadZeroPageOffset(Cpu::OP::LDY_ZPX, &Cpu::Y, &Cpu::X);
+    testLoadAbsolute(Cpu::OP::LDY_ABS, &Cpu::Y);
 }
 
 TEST_CASE_METHOD(CpuFixture, "TXS")
