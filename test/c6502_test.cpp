@@ -34,16 +34,10 @@ public:
     }
 
     /// Checks that the flags are set correctly for load instructions
-    void requireLoadState(u8 Cpu::*reg)
+    void requireLoadState(const u8 Cpu::*reg)
     {
-        if (cpuCopy.*reg & 0b1000'0000)
-        {
-            cpuCopy.N = 1;
-        }
-        if (cpuCopy.*reg == 0x00)
-        {
-            cpuCopy.Z = 1;
-        }
+        cpuCopy.Z = (cpuCopy.*reg == 0x00);
+        cpuCopy.N = (cpuCopy.*reg & 0b1000'0000) > 0;
 
         requireState();
     }

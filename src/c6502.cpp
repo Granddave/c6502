@@ -90,8 +90,8 @@ u16 Cpu::readWord(s32& cycles, const u16 address, const Memory& memory)
 void Cpu::loadIntoRegister(u8& reg, const u8 value, const u8& zeroFlagReg)
 {
     reg = value;
-    Z = (zeroFlagReg == 0);
-    N = (reg & (1 << 7)) != 0;
+    Z = (zeroFlagReg == 0x00);
+    N = (reg & 0b1000'0000) != 0;
 }
 
 void Cpu::loadImmediate(s32& cycles, Memory& memory, u8& reg)
@@ -238,13 +238,13 @@ void Cpu::executeInfinite(Memory& memory)
 {
     while (true)
     {
-        s32 dummy = 0xFF;
+        s32 dummyCycles = 0xFF;
 
         // Fetch instruction from memory
-        const u8 byte = fetchByte(dummy, memory);
+        const u8 byte = fetchByte(dummyCycles, memory);
         const auto ins = static_cast<OP>(byte);
 
-        executeInstruction(ins, dummy, memory);
+        executeInstruction(ins, dummyCycles, memory);
     }
 }
 
