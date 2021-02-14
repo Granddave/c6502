@@ -1,5 +1,8 @@
 #include "c6502/c6502.h"
 
+#include <bitset>
+#include <iomanip>
+
 namespace c6502
 {
 std::ostream& operator<<(std::ostream& os, Cpu const& cpu)
@@ -11,12 +14,12 @@ std::ostream& operator<<(std::ostream& os, Cpu const& cpu)
 std::string Cpu::toString() const
 {
     std::stringstream ss;
-    ss << "PC: 0x" << std::hex << unsigned(PC) << '\n'
-       << "SP: 0x" << std::hex << unsigned(SP) << '\n'
-       << "A:  0x" << std::hex << unsigned(A) << '\n'
-       << "X:  0x" << std::hex << unsigned(X) << '\n'
-       << "Y:  0x" << std::hex << unsigned(Y) << '\n'
-       << "SR: 0b" << std::hex << unsigned(SR);
+    ss << "PC: 0x" << std::setfill('0') << std::setw(4) << std::hex << unsigned(PC) << ", ";
+    ss << "SP: 0x" << std::setfill('0') << std::setw(2) << std::hex << unsigned(SP) << ", ";
+    ss << "A: 0x" << std::setfill('0') << std::setw(2) << std::hex << unsigned(A) << ", ";
+    ss << "X: 0x" << std::setfill('0') << std::setw(2) << std::hex << unsigned(X) << ", ";
+    ss << "Y: 0x" << std::setfill('0') << std::setw(2) << std::hex << unsigned(Y) << ", ";
+    ss << "SR: 0b" << std::bitset<8>(SR).to_string();
 
     return ss.str();
 }
@@ -26,6 +29,11 @@ void Cpu::reset(Memory& memory)
     std::cout << "-- CPU reset --" << std::endl;
     memory.initialize();
 
+    // memory[c_reset_vector] = 0x00;
+    // memory[c_reset_vector + 1] = 0x00;
+
+    // PC = (memory[c_reset_vector + 1] << 8) | memory[c_reset_vector];
+    // TODO: Start executing from where reset vector points instead reset vector
     PC = c_reset_vector;
     SP = c_stack_top;
 
@@ -203,7 +211,9 @@ void Cpu::executeInstruction(const OP opCode, s32& cycles, Memory& memory)
             break;
         }
         default:
+        {
             throw InvalidOpCode(opCode);
+        }
     }
 }
 

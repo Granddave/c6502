@@ -33,13 +33,30 @@ public:
         REQUIRE(cpu == cpuCopy);
     }
 
+    /// Checks that the flags are set correctly for load instructions
+    void requireLoadState(u8 Cpu::*reg)
+    {
+        if (cpuCopy.*reg & 0b1000'0000)
+        {
+            cpuCopy.N = 1;
+        }
+        if (cpuCopy.*reg == 0x00)
+        {
+            cpuCopy.Z = 1;
+        }
+
+        requireState();
+    }
+
     void testLoadImmediate(const Cpu::OP opCode, u8 Cpu::*reg)
     {
         GIVEN("Constant is placed after instruction")
         {
-            const u8 constant = GENERATE(0x00, 0x42, 0xFF);
+            const u8 data = GENERATE(0x00, 0x42, 0xFF);
+
             memory[0xFFFC] = opCode;
-            memory[0xFFFD] = constant;
+            memory[0xFFFD] = data;
+
             const s32 cyclesExpected = 2;
             const s32 PCIncrementsExpected = 2;
 
@@ -52,19 +69,10 @@ public:
                 THEN("Constant is loaded into index register")
                 {
                     cpuCopy.PC += PCIncrementsExpected;
-                    cpuCopy.*reg = constant;
-
-                    if (cpuCopy.*reg & 0x80)
-                    {
-                        cpuCopy.N = 1;
-                    }
-                    else if (cpuCopy.*reg == 0x00)
-                    {
-                        cpuCopy.Z = 1;
-                    }
+                    cpuCopy.*reg = data;
 
                     REQUIRE(cyclesUsed == cyclesExpected);
-                    requireState();
+                    requireLoadState(reg);
                 }
             }
         }
@@ -75,10 +83,12 @@ public:
         GIVEN("ZeroPage address is placed after instruction")
         {
             const u16 zeroPageAddr = 0x0037;
-            const u8 zeroPageData = GENERATE(0x00, 0x42, 0xFF);
+            const u8 data = GENERATE(0x00, 0x42, 0xFF);
+
             memory[0xFFFC] = opCode;
             memory[0xFFFD] = zeroPageAddr;
-            memory[zeroPageAddr] = zeroPageData;
+            memory[zeroPageAddr] = data;
+
             const s32 cyclesExpected = 3;
             const s32 PCIncrementsExpected = 2;
 
@@ -91,19 +101,10 @@ public:
                 THEN("ZeroPage data is loaded into index register")
                 {
                     cpuCopy.PC += PCIncrementsExpected;
-                    cpuCopy.*reg = zeroPageData;
-
-                    if (cpuCopy.*reg & 0x80)
-                    {
-                        cpuCopy.N = 1;
-                    }
-                    else if (cpuCopy.*reg == 0x00)
-                    {
-                        cpuCopy.Z = 1;
-                    }
+                    cpuCopy.*reg = data;
 
                     REQUIRE(cyclesUsed == cyclesExpected);
-                    requireState();
+                    requireLoadState(reg);
                 }
             }
         }
@@ -118,10 +119,11 @@ public:
 
             /// Handles zero page wrap around
             const u16 zeroPageAddrWithOffset = (zeroPageAddr + cpu.*offsetReg) & 0x00FF;
-            const u8 zeroPageData = GENERATE(0x00, 0x42, 0xFF);
+            const u8 data = GENERATE(0x00, 0x42, 0xFF);
+
             memory[0xFFFC] = opCode;
             memory[0xFFFD] = zeroPageAddr;
-            memory[zeroPageAddrWithOffset] = zeroPageData;
+            memory[zeroPageAddrWithOffset] = data;
 
             const s32 cyclesExpected = 4;
             const s32 PCIncrementsExpected = 2;
@@ -135,19 +137,10 @@ public:
                 THEN("ZeroPage data is loaded into index register")
                 {
                     cpuCopy.PC += PCIncrementsExpected;
-                    cpuCopy.*reg = zeroPageData;
-
-                    if (cpuCopy.*reg & 0x80)
-                    {
-                        cpuCopy.N = 1;
-                    }
-                    else if (cpuCopy.*reg == 0x00)
-                    {
-                        cpuCopy.Z = 1;
-                    }
+                    cpuCopy.*reg = data;
 
                     REQUIRE(cyclesUsed == cyclesExpected);
-                    requireState();
+                    requireLoadState(reg);
                 }
             }
         }
@@ -159,6 +152,7 @@ public:
         {
             const u16 absoluteAddr = 0xABCD;
             const u8 data = GENERATE(0x00, 0x42, 0xFF);
+
             memory[0xFFFC] = opCode;
             memory[0xFFFD] = absoluteAddr & 0x00FF;
             memory[0xFFFE] = (absoluteAddr >> 8) & 0x00FF;
@@ -178,17 +172,8 @@ public:
                     cpuCopy.PC += PCIncrementsExpected;
                     cpuCopy.*reg = data;
 
-                    if (cpuCopy.*reg & 0x80)
-                    {
-                        cpuCopy.N = 1;
-                    }
-                    else if (cpuCopy.*reg == 0x00)
-                    {
-                        cpuCopy.Z = 1;
-                    }
-
                     REQUIRE(cyclesUsed == cyclesExpected);
-                    requireState();
+                    requireLoadState(reg);
                 }
             }
         }

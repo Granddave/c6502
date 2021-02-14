@@ -83,14 +83,17 @@ struct Cpu
     /// OP Codes
     enum OP : u8
     {
+        // LDA
         LDA_IM = 0xA9,
         LDA_ZP = 0xA5,
         LDA_ZPX = 0xB5,
         LDA_ABS = 0xAD,
+        // LDX
         LDX_IM = 0xA2,
         LDX_ZP = 0xA6,
         LDX_ZPY = 0xB6,
         LDX_ABS = 0xAE,
+        // LDY
         LDY_IM = 0xA0,
         LDY_ZP = 0xA4,
         LDY_ZPX = 0xB4,
