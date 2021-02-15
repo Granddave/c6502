@@ -94,43 +94,8 @@ void Cpu::loadIntoRegister(u8& reg, const u8 value, const u8& zeroFlagReg)
     N = (reg & 0b1000'0000) != 0;
 }
 
-void Cpu::loadImmediate(s32& cycles, Memory& memory, u8& reg)
+void Cpu::loadIntoRegister(u8& reg, const u8 value)
 {
-    const u8 value = fetchByte(cycles, memory);
-    loadIntoRegister(reg, value, reg);
-}
-
-void Cpu::loadZeroPage(s32& cycles, Memory& memory, u8& reg)
-{
-    const u8 ZPAddr = fetchByte(cycles, memory);
-    const u8 value = readByte(cycles, ZPAddr, memory);
-    loadIntoRegister(reg, value, reg);
-}
-
-void Cpu::loadZeroPageOffset(s32& cycles, Memory& memory, u8& reg, u8& offsetReg)
-{
-    const u8 ZPAddr = fetchByte(cycles, memory);
-
-    /// Should handle wrap around automatically since both are u8's
-    const u8 ZPAddrWithOffset = ZPAddr + offsetReg;
-    cycles--;
-
-    const u8 value = readByte(cycles, ZPAddrWithOffset, memory);
-    loadIntoRegister(reg, value, reg);
-}
-
-void Cpu::loadAbsolute(s32& cycles, Memory& memory, u8& reg, const u8 offset)
-{
-    const u16 absoluteAddr = fetchWord(cycles, memory);
-    const u16 absoluteAddrWithOffset = absoluteAddr + offset;
-
-    const bool crossedPageBoundary = (absoluteAddr & 0xFF00) != (absoluteAddrWithOffset & 0xFF00);
-    if (crossedPageBoundary)
-    {
-        cycles--;
-    }
-
-    const u8 value = readByte(cycles, absoluteAddrWithOffset, memory);
     loadIntoRegister(reg, value, reg);
 }
 
@@ -141,62 +106,74 @@ void Cpu::executeInstruction(const OP opCode, s32& cycles, Memory& memory)
     {
         case OP::LDA_IM:
         {
-            loadImmediate(cycles, memory, A);
+            const u8 value = readImmediate(cycles, memory);
+            loadIntoRegister(A, value);
             break;
         }
         case OP::LDA_ZP:
         {
-            loadZeroPage(cycles, memory, A);
+            const u8 value = readZeroPage(cycles, memory);
+            loadIntoRegister(A, value);
             break;
         }
         case OP::LDA_ZPX:
         {
-            loadZeroPageOffset(cycles, memory, A, X);
+            const u8 value = readZeroPageOffset(cycles, memory, X);
+            loadIntoRegister(A, value);
             break;
         }
         case OP::LDA_ABS:
         {
-            loadAbsolute(cycles, memory, A);
+            const u8 value = readAbsolute(cycles, memory);
+            loadIntoRegister(A, value);
             break;
         }
         case OP::LDX_IM:
         {
-            loadImmediate(cycles, memory, X);
+            const u8 value = readImmediate(cycles, memory);
+            loadIntoRegister(X, value);
             break;
         }
         case OP::LDX_ZP:
         {
-            loadZeroPage(cycles, memory, X);
+            const u8 value = readZeroPage(cycles, memory);
+            loadIntoRegister(X, value);
             break;
         }
         case OP::LDX_ZPY:
         {
-            loadZeroPageOffset(cycles, memory, X, Y);
+            const u8 value = readZeroPageOffset(cycles, memory, Y);
+            loadIntoRegister(X, value);
             break;
         }
         case OP::LDX_ABS:
         {
-            loadAbsolute(cycles, memory, X);
+            const u8 value = readAbsolute(cycles, memory);
+            loadIntoRegister(X, value);
             break;
         }
         case OP::LDY_IM:
         {
-            loadImmediate(cycles, memory, Y);
+            const u8 value = readImmediate(cycles, memory);
+            loadIntoRegister(Y, value);
             break;
         }
         case OP::LDY_ZP:
         {
-            loadZeroPage(cycles, memory, Y);
+            const u8 value = readZeroPage(cycles, memory);
+            loadIntoRegister(Y, value);
             break;
         }
         case OP::LDY_ZPX:
         {
-            loadZeroPageOffset(cycles, memory, Y, X);
+            const u8 value = readZeroPageOffset(cycles, memory, X);
+            loadIntoRegister(Y, value);
             break;
         }
         case OP::LDY_ABS:
         {
-            loadAbsolute(cycles, memory, Y);
+            const u8 value = readAbsolute(cycles, memory);
+            loadIntoRegister(Y, value);
             break;
         }
         case OP::TXS:

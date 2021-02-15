@@ -106,6 +106,7 @@ struct Cpu
     {
         switch (opCode)
         {
+            // LDA
             case OP::LDA_IM:
                 return "LDA_IM";
             case OP::LDA_ZP:
@@ -115,6 +116,7 @@ struct Cpu
             case OP::LDA_ABS:
                 return "LDA_ABS";
             case OP::LDX_IM:
+            // LDX
                 return "LDX_IM";
             case OP::LDX_ZP:
                 return "LDX_ZP";
@@ -122,12 +124,13 @@ struct Cpu
                 return "LDX_ZPY";
             case OP::LDX_ABS:
                 return "LDX_ABS";
-            case OP::LDY_ZPX:
-                return "LDY_ZPX";
+            // LDY
             case OP::LDY_IM:
                 return "LDY_IM";
             case OP::LDY_ZP:
                 return "LDY_ZP";
+            case OP::LDY_ZPX:
+                return "LDY_ZPX";
             case OP::LDY_ABS:
                 return "LDY_ABS";
             case OP::TXS:
@@ -194,11 +197,12 @@ struct Cpu
     u16 readWord(s32& cycles, const u16 address, const Memory& memory);
 
     void loadIntoRegister(u8& reg, const u8 value, const u8& zeroFlagReg);
+    void loadIntoRegister(u8& reg, const u8 value);
 
-    void loadImmediate(s32& cycles, Memory& memory, u8& reg);
-    void loadZeroPage(s32& cycles, Memory& memory, u8& reg);
-    void loadZeroPageOffset(s32& cycles, Memory& memory, u8& reg, u8& offsetReg);
-    void loadAbsolute(s32& cycles, Memory& memory, u8& reg, const u8 offset = 0x00);
+    u8 readImmediate(s32& cycles, Memory& memory);
+    u8 readZeroPage(s32& cycles, Memory& memory);
+    u8 readZeroPageOffset(s32& cycles, Memory& memory, u8& offsetReg);
+    u8 readAbsolute(s32& cycles, Memory& memory);
 
     /// Executes an instruction
     void executeInstruction(const OP opCode, s32& cycles, Memory& memory);
