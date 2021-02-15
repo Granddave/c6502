@@ -44,21 +44,25 @@ void Cpu::reset(Memory& memory)
     SR = 0;
 }
 
-u8 Cpu::fetchByte(s32& cycles, const Memory& memory)
+u8 Cpu::fetchByte(s32& cycles, const Memory& memory, const bool log)
 {
     const u8 data = memory[PC];
     PC++;
     cycles--;
 
-    std::cout << "Fetch: " << std::hex << unsigned(data) << std::endl;
+    if (log)
+    {
+        std::cout << "Fetch: " << std::hex << unsigned(data) << std::endl;
+    }
 
     return data;
 }
 
 u16 Cpu::fetchWord(s32& cycles, const Memory& memory)
 {
-    const u8 lowByte = fetchByte(cycles, memory);
-    const u8 highByte = fetchByte(cycles, memory);
+    const bool log = false;
+    const u8 lowByte = fetchByte(cycles, memory, log);
+    const u8 highByte = fetchByte(cycles, memory, log);
     const u16 data = (highByte << 8) | lowByte;
 
     std::cout << "Fetch: " << std::hex << unsigned(data) << std::endl;
@@ -128,6 +132,18 @@ void Cpu::executeInstruction(const OP opCode, s32& cycles, Memory& memory)
             loadIntoRegister(A, value);
             break;
         }
+        case OP::LDA_ABSX:
+        {
+            const u8 value = readAbsoluteOffset(cycles, memory, X);
+            loadIntoRegister(A, value);
+            break;
+        }
+        case OP::LDA_ABSY:
+        {
+            const u8 value = readAbsoluteOffset(cycles, memory, Y);
+            loadIntoRegister(A, value);
+            break;
+        }
         case OP::LDX_IM:
         {
             const u8 value = readImmediate(cycles, memory);
@@ -152,6 +168,12 @@ void Cpu::executeInstruction(const OP opCode, s32& cycles, Memory& memory)
             loadIntoRegister(X, value);
             break;
         }
+        case OP::LDX_ABSY:
+        {
+            const u8 value = readAbsoluteOffset(cycles, memory, Y);
+            loadIntoRegister(X, value);
+            break;
+        }
         case OP::LDY_IM:
         {
             const u8 value = readImmediate(cycles, memory);
@@ -173,6 +195,12 @@ void Cpu::executeInstruction(const OP opCode, s32& cycles, Memory& memory)
         case OP::LDY_ABS:
         {
             const u8 value = readAbsolute(cycles, memory);
+            loadIntoRegister(Y, value);
+            break;
+        }
+        case OP::LDY_ABSX:
+        {
+            const u8 value = readAbsoluteOffset(cycles, memory, X);
             loadIntoRegister(Y, value);
             break;
         }

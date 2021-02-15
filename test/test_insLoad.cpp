@@ -104,7 +104,7 @@ public:
             {
                 const s32 cyclesUsed = cpu.execute(cyclesExpected, memory);
 
-                THEN("ZeroPage data is loaded into index register")
+                THEN("ZeroPage + offset addressed data is loaded into index register")
                 {
                     cpuCopy.PC += PCIncrementsExpected;
                     cpuCopy.*reg = data;
@@ -148,30 +148,124 @@ public:
             }
         }
     }
+
+    void testLoadAbsoluteOffset(const Cpu::OP opCode, u8 Cpu::*reg, u8 Cpu::*offsetReg)
+    {
+        GIVEN("Absolute address is placed after instruction and offset register is set")
+        {
+            cpu.*offsetReg = GENERATE(0x00, 0x01, 0xFF);
+            const u16 absoluteAddr = 0xABCD;
+            const u16 absoluteAddrWithOffset = absoluteAddr + cpu.*offsetReg;
+            const u8 data = GENERATE(0x00, 0x42, 0xFF);
+
+            memory[0xFFFC] = opCode;
+            memory[0xFFFD] = absoluteAddr & 0x00FF;
+            memory[0xFFFE] = absoluteAddr >> 8;
+            memory[absoluteAddrWithOffset] = data;
+
+            const bool crossedPageBoundary =
+                (absoluteAddr & 0xFF00) != (absoluteAddrWithOffset & 0xFF00);
+
+            const s32 PCIncrementsExpected = 3;
+            const s32 cyclesExpected = crossedPageBoundary ? 5 : 4;
+
+            takeSnapshot();
+
+            WHEN(Cpu::OpCodeToString(opCode) + " is executed")
+            {
+                const s32 cyclesUsed = cpu.execute(cyclesExpected, memory);
+
+                THEN("Absolute + offset addressed data is loaded into index register")
+                {
+                    cpuCopy.PC += PCIncrementsExpected;
+                    cpuCopy.*reg = data;
+
+                    REQUIRE(cyclesUsed == cyclesExpected);
+                    requireLoadState(reg);
+                }
+            }
+        }
+    }
 };
 
-TEST_CASE_METHOD(CpuFixtureInsLoad, "LDA")
+TEST_CASE_METHOD(CpuFixtureInsLoad, "LDA_IM")
 {
     testLoadImmediate(Cpu::OP::LDA_IM, &Cpu::A);
+}
+
+TEST_CASE_METHOD(CpuFixtureInsLoad, "LDA_ZP")
+{
     testLoadZeroPage(Cpu::OP::LDA_ZP, &Cpu::A);
+}
+
+TEST_CASE_METHOD(CpuFixtureInsLoad, "LDA_ZPX")
+{
     testLoadZeroPageOffset(Cpu::OP::LDA_ZPX, &Cpu::A, &Cpu::X);
+}
+
+TEST_CASE_METHOD(CpuFixtureInsLoad, "LDA_ABS")
+{
     testLoadAbsolute(Cpu::OP::LDA_ABS, &Cpu::A);
+}
+
+TEST_CASE_METHOD(CpuFixtureInsLoad, "LDA_ABSX")
+{
+    testLoadAbsoluteOffset(Cpu::OP::LDA_ABSX, &Cpu::A, &Cpu::X);
+}
+
+TEST_CASE_METHOD(CpuFixtureInsLoad, "LDA_ABSY")
+{
+    testLoadAbsoluteOffset(Cpu::OP::LDA_ABSY, &Cpu::A, &Cpu::Y);
 }
 
 TEST_CASE_METHOD(CpuFixtureInsLoad, "LDX")
 {
     testLoadImmediate(Cpu::OP::LDX_IM, &Cpu::X);
+}
+
+TEST_CASE_METHOD(CpuFixtureInsLoad, "LDX_ZP")
+{
     testLoadZeroPage(Cpu::OP::LDX_ZP, &Cpu::X);
+}
+
+TEST_CASE_METHOD(CpuFixtureInsLoad, "LDX_ZPY")
+{
     testLoadZeroPageOffset(Cpu::OP::LDX_ZPY, &Cpu::X, &Cpu::Y);
+}
+
+TEST_CASE_METHOD(CpuFixtureInsLoad, "LDX_ABS")
+{
     testLoadAbsolute(Cpu::OP::LDX_ABS, &Cpu::X);
 }
 
-TEST_CASE_METHOD(CpuFixtureInsLoad, "LDY")
+TEST_CASE_METHOD(CpuFixtureInsLoad, "LDX_ABSY")
+{
+    testLoadAbsoluteOffset(Cpu::OP::LDX_ABSY, &Cpu::X, &Cpu::Y);
+}
+
+TEST_CASE_METHOD(CpuFixtureInsLoad, "LDY_IM")
 {
     testLoadImmediate(Cpu::OP::LDY_IM, &Cpu::Y);
+}
+
+TEST_CASE_METHOD(CpuFixtureInsLoad, "LDY_ZP")
+{
     testLoadZeroPage(Cpu::OP::LDY_ZP, &Cpu::Y);
+}
+
+TEST_CASE_METHOD(CpuFixtureInsLoad, "LDY_ZPX")
+{
     testLoadZeroPageOffset(Cpu::OP::LDY_ZPX, &Cpu::Y, &Cpu::X);
+}
+
+TEST_CASE_METHOD(CpuFixtureInsLoad, "LDY_ABS")
+{
     testLoadAbsolute(Cpu::OP::LDY_ABS, &Cpu::Y);
+}
+
+TEST_CASE_METHOD(CpuFixtureInsLoad, "LDY_ABSX")
+{
+    testLoadAbsoluteOffset(Cpu::OP::LDY_ABSX, &Cpu::Y, &Cpu::X);
 }
 
 } // namespace c6502

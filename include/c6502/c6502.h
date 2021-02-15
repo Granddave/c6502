@@ -88,16 +88,20 @@ struct Cpu
         LDA_ZP = 0xA5,
         LDA_ZPX = 0xB5,
         LDA_ABS = 0xAD,
+        LDA_ABSX = 0xBD,
+        LDA_ABSY = 0xB9,
         // LDX
         LDX_IM = 0xA2,
         LDX_ZP = 0xA6,
         LDX_ZPY = 0xB6,
         LDX_ABS = 0xAE,
+        LDX_ABSY = 0xBE,
         // LDY
         LDY_IM = 0xA0,
         LDY_ZP = 0xA4,
         LDY_ZPX = 0xB4,
         LDY_ABS = 0xAC,
+        LDY_ABSX = 0xBC,
         TXS = 0x9A,
         NOP = 0xEA
     };
@@ -115,8 +119,12 @@ struct Cpu
                 return "LDA_ZPX";
             case OP::LDA_ABS:
                 return "LDA_ABS";
-            case OP::LDX_IM:
+            case OP::LDA_ABSX:
+                return "LDA_ABSX";
+            case OP::LDA_ABSY:
+                return "LDA_ABSY";
             // LDX
+            case OP::LDX_IM:
                 return "LDX_IM";
             case OP::LDX_ZP:
                 return "LDX_ZP";
@@ -124,6 +132,8 @@ struct Cpu
                 return "LDX_ZPY";
             case OP::LDX_ABS:
                 return "LDX_ABS";
+            case OP::LDX_ABSY:
+                return "LDX_ABSY";
             // LDY
             case OP::LDY_IM:
                 return "LDY_IM";
@@ -133,6 +143,9 @@ struct Cpu
                 return "LDY_ZPX";
             case OP::LDY_ABS:
                 return "LDY_ABS";
+            case OP::LDY_ABSX:
+                return "LDY_ABSX";
+            //
             case OP::TXS:
                 return "TXS";
             case OP::NOP:
@@ -185,7 +198,7 @@ struct Cpu
     void reset(Memory& memory);
 
     /// Reads a byte from specified address and increments the program counter
-    u8 fetchByte(s32& cycles, const Memory& memory);
+    u8 fetchByte(s32& cycles, const Memory& memory, const bool log = true);
 
     /// Reads a 16 bit word from specified address and increments the program counter
     u16 fetchWord(s32& cycles, const Memory& memory);
@@ -203,6 +216,7 @@ struct Cpu
     u8 readZeroPage(s32& cycles, Memory& memory);
     u8 readZeroPageOffset(s32& cycles, Memory& memory, u8& offsetReg);
     u8 readAbsolute(s32& cycles, Memory& memory);
+    u8 readAbsoluteOffset(s32& cycles, Memory& memory, u8& offsetReg);
 
     /// Executes an instruction
     void executeInstruction(const OP opCode, s32& cycles, Memory& memory);

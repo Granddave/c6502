@@ -30,4 +30,18 @@ u8 Cpu::readAbsolute(s32& cycles, Memory& memory)
     return readByte(cycles, absoluteAddr, memory);
 }
 
+u8 Cpu::readAbsoluteOffset(s32& cycles, Memory& memory, u8& offsetReg)
+{
+    const u16 absoluteAddr = fetchWord(cycles, memory);
+    const u16 absoluteAddrWithOffset = absoluteAddr + offsetReg;
+
+    const bool crossedPageBoundary = (absoluteAddr & 0xFF00) != (absoluteAddrWithOffset & 0xFF00);
+    if (crossedPageBoundary)
+    {
+        cycles--;
+    }
+
+    return readByte(cycles, absoluteAddrWithOffset, memory);
+}
+
 }; // namespace c6502
