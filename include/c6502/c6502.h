@@ -90,6 +90,8 @@ struct Cpu
         LDA_ABS = 0xAD,
         LDA_ABSX = 0xBD,
         LDA_ABSY = 0xB9,
+        LDA_IND_ZPX = 0xA1,
+        LDA_IND_ZPY = 0xB1,
         // LDX
         LDX_IM = 0xA2,
         LDX_ZP = 0xA6,
@@ -123,6 +125,10 @@ struct Cpu
                 return "LDA_ABSX";
             case OP::LDA_ABSY:
                 return "LDA_ABSY";
+            case OP::LDA_IND_ZPX:
+                return "LDA_IND_ZPX";
+            case OP::LDA_IND_ZPY:
+                return "LDA_IND_ZPY";
             // LDX
             case OP::LDX_IM:
                 return "LDX_IM";
@@ -204,7 +210,7 @@ struct Cpu
     u16 fetchWord(s32& cycles, const Memory& memory);
 
     /// Reads a byte from address
-    u8 readByte(s32& cycles, const u16 address, const Memory& memory);
+    u8 readByte(s32& cycles, const u16 address, const Memory& memory, const bool log = true);
 
     /// Reads a 16 bit word from address
     u16 readWord(s32& cycles, const u16 address, const Memory& memory);
@@ -216,7 +222,12 @@ struct Cpu
     u8 readZeroPage(s32& cycles, Memory& memory);
     u8 readZeroPageOffset(s32& cycles, Memory& memory, u8& offsetReg);
     u8 readAbsolute(s32& cycles, Memory& memory);
-    u8 readAbsoluteOffset(s32& cycles, Memory& memory, u8& offsetReg);
+    u8 readAbsoluteOffset(s32& cycles, Memory& memory, u8& offsetReg); // TODO: Const offsetReg
+    u8 readZeroPageIndirectX(s32& cycles, Memory& memory, const u8& offsetReg);
+    u8 readZeroPageIndirectY(s32& cycles,
+                             Memory& memory,
+                             const u8& offsetReg,
+                             const bool alwaysAddExtraCycle = false);
 
     /// Executes an instruction
     void executeInstruction(const OP opCode, s32& cycles, Memory& memory);

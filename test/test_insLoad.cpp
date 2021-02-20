@@ -155,16 +155,15 @@ public:
         {
             cpu.*offsetReg = GENERATE(0x00, 0x01, 0xFF);
             const u16 absoluteAddr = 0xABCD;
-            const u16 absoluteAddrWithOffset = absoluteAddr + cpu.*offsetReg;
+            const u16 effectiveAddr = absoluteAddr + cpu.*offsetReg;
             const u8 data = GENERATE(0x00, 0x42, 0xFF);
 
             memory[0xFFFC] = opCode;
             memory[0xFFFD] = absoluteAddr & 0x00FF;
             memory[0xFFFE] = absoluteAddr >> 8;
-            memory[absoluteAddrWithOffset] = data;
+            memory[effectiveAddr] = data;
 
-            const bool crossedPageBoundary =
-                (absoluteAddr & 0xFF00) != (absoluteAddrWithOffset & 0xFF00);
+            const bool crossedPageBoundary = (absoluteAddr & 0xFF00) != (effectiveAddr & 0xFF00);
 
             const s32 PCIncrementsExpected = 3;
             const s32 cyclesExpected = crossedPageBoundary ? 5 : 4;
@@ -182,6 +181,89 @@ public:
 
                     REQUIRE(cyclesUsed == cyclesExpected);
                     requireLoadState(reg);
+                }
+            }
+        }
+    }
+
+    void testLoadIndexedIndirect(const Cpu::OP opCode, u8 Cpu::*offsetReg)
+    {
+        GIVEN(
+            "Indirect address with offset is placed after instruction, offset register is set, "
+            "effective address is set and effective address has value")
+        {
+            cpu.*offsetReg = GENERATE(0x00, 0x01, 0xFF);
+            const u8 ZPAddr = GENERATE(0x12, 0xFF);
+
+            /// Handles zero page wrap around
+            const u16 indirectAddr = (ZPAddr + cpu.*offsetReg) & 0x00FF;
+            const u16 effectiveAddr = 0xABCD;
+            const u8 data = 0x42;
+
+            memory[0xFFFC] = opCode;
+            memory[0xFFFD] = ZPAddr & 0x00FF;
+            memory[indirectAddr] = effectiveAddr & 0x00FF;
+            memory[indirectAddr + 1] = effectiveAddr >> 8;
+            memory[effectiveAddr] = data;
+
+            const s32 PCIncrementsExpected = 2;
+            const s32 cyclesExpected = 6;
+
+            takeSnapshot();
+
+            WHEN(Cpu::OpCodeToString(opCode) + " is executed")
+            {
+                const s32 cyclesUsed = cpu.execute(cyclesExpected, memory);
+
+                THEN("Indirect + offset addressed data is loaded into the A register")
+                {
+                    cpuCopy.PC += PCIncrementsExpected;
+                    cpuCopy.A = data;
+
+                    REQUIRE(cyclesUsed == cyclesExpected);
+                    requireLoadState(&Cpu::A);
+                }
+            }
+        }
+    }
+
+    void testLoadIndirectIndexed(const Cpu::OP opCode, u8 Cpu::*offsetReg)
+    {
+        GIVEN(
+            "Indirect address is placed after instruction, offset register is set, "
+            "effective address is set and effective address with offset has value")
+        {
+            cpu.*offsetReg = GENERATE(0x00, 0x01, 0xFF);
+            const u8 ZPAddr = GENERATE(0x12, 0xFF);
+
+            const u16 indirectAddr = 0xABCD;
+            const u16 effectiveAddr = indirectAddr + cpu.*offsetReg;
+            const u8 data = 0x42;
+
+            memory[0xFFFC] = opCode;
+            memory[0xFFFD] = ZPAddr;
+            memory[ZPAddr] = indirectAddr & 0x00FF;
+            memory[ZPAddr + 1] = indirectAddr >> 8;
+            memory[effectiveAddr] = data;
+
+            const bool crossedPageBoundary = (effectiveAddr & 0xFF00) != (indirectAddr & 0xFF00);
+
+            const s32 PCIncrementsExpected = 2;
+            const s32 cyclesExpected = crossedPageBoundary ? 6 : 5;
+
+            takeSnapshot();
+
+            WHEN(Cpu::OpCodeToString(opCode) + " is executed")
+            {
+                const s32 cyclesUsed = cpu.execute(cyclesExpected, memory);
+
+                THEN("Indirect + offset addressed data is loaded into the A register")
+                {
+                    cpuCopy.PC += PCIncrementsExpected;
+                    cpuCopy.A = data;
+
+                    REQUIRE(cyclesUsed == cyclesExpected);
+                    requireLoadState(&Cpu::A);
                 }
             }
         }
@@ -216,6 +298,16 @@ TEST_CASE_METHOD(CpuFixtureInsLoad, "LDA_ABSX")
 TEST_CASE_METHOD(CpuFixtureInsLoad, "LDA_ABSY")
 {
     testLoadAbsoluteOffset(Cpu::OP::LDA_ABSY, &Cpu::A, &Cpu::Y);
+}
+
+TEST_CASE_METHOD(CpuFixtureInsLoad, "LDA_IND_ZPX")
+{
+    testLoadIndexedIndirect(Cpu::OP::LDA_IND_ZPX, &Cpu::X);
+}
+
+TEST_CASE_METHOD(CpuFixtureInsLoad, "LDA_IND_ZPY")
+{
+    testLoadIndirectIndexed(Cpu::OP::LDA_IND_ZPY, &Cpu::Y);
 }
 
 TEST_CASE_METHOD(CpuFixtureInsLoad, "LDX")

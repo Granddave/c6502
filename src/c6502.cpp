@@ -30,7 +30,7 @@ void Cpu::reset(Memory& memory)
     memory.initialize();
 
     // memory[c_reset_vector] = 0x00;
-    // memory[c_reset_vector + 1] = 0x00;
+    // memory[c_reset_vector + 1] = 0x10;
 
     // PC = (memory[c_reset_vector + 1] << 8) | memory[c_reset_vector];
     // TODO: Start executing from where reset vector points instead reset vector
@@ -47,13 +47,14 @@ void Cpu::reset(Memory& memory)
 u8 Cpu::fetchByte(s32& cycles, const Memory& memory, const bool log)
 {
     const u8 data = memory[PC];
-    PC++;
-    cycles--;
-
     if (log)
     {
-        std::cout << "Fetch: " << std::hex << unsigned(data) << std::endl;
+        std::cout << "FetchB: " << std::hex << unsigned(PC) << ": " << std::hex << unsigned(data)
+                  << std::endl;
     }
+
+    PC++;
+    cycles--;
 
     return data;
 }
@@ -65,28 +66,34 @@ u16 Cpu::fetchWord(s32& cycles, const Memory& memory)
     const u8 highByte = fetchByte(cycles, memory, log);
     const u16 data = (highByte << 8) | lowByte;
 
-    std::cout << "Fetch: " << std::hex << unsigned(data) << std::endl;
+    std::cout << "FetchW: " << std::hex << unsigned(PC) << "+1: " << std::hex << unsigned(data)
+              << std::endl;
 
     return data;
 }
 
-u8 Cpu::readByte(s32& cycles, const u16 address, const Memory& memory)
+u8 Cpu::readByte(s32& cycles, const u16 address, const Memory& memory, const bool log)
 {
     const u8 data = memory[address];
+    if (log)
+    {
+        std::cout << "ReadB : " << std::hex << unsigned(address) << ": " << std::hex
+                  << unsigned(data) << std::endl;
+    }
     cycles--;
-
-    std::cout << "Read:  " << std::hex << unsigned(data) << std::endl;
 
     return data;
 }
 
 u16 Cpu::readWord(s32& cycles, const u16 address, const Memory& memory)
 {
-    const u8 lowByte = readByte(cycles, address, memory);
-    const u8 highByte = readByte(cycles, address + 1, memory);
+    const bool log = false;
+    const u8 lowByte = readByte(cycles, address, memory, log);
+    const u8 highByte = readByte(cycles, address + 1, memory, log);
     const u16 data = (highByte << 8) | lowByte;
 
-    std::cout << "Read:  " << std::hex << unsigned(data) << std::endl;
+    std::cout << "ReadW : " << std::hex << unsigned(address) << ": " << std::hex << unsigned(data)
+              << std::endl;
 
     return data;
 }
@@ -105,7 +112,7 @@ void Cpu::loadIntoRegister(u8& reg, const u8 value)
 
 void Cpu::executeInstruction(const OP opCode, s32& cycles, Memory& memory)
 {
-    std::cout << "Ins:   " << OpCodeToString(opCode) << '\n';
+    std::cout << "Ins   : " << OpCodeToString(opCode) << '\n';
     switch (opCode)
     {
         case OP::LDA_IM:
@@ -141,6 +148,18 @@ void Cpu::executeInstruction(const OP opCode, s32& cycles, Memory& memory)
         case OP::LDA_ABSY:
         {
             const u8 value = readAbsoluteOffset(cycles, memory, Y);
+            loadIntoRegister(A, value);
+            break;
+        }
+        case OP::LDA_IND_ZPX:
+        {
+            const u8 value = readZeroPageIndirectX(cycles, memory, X);
+            loadIntoRegister(A, value);
+            break;
+        }
+        case OP::LDA_IND_ZPY:
+        {
+            const u8 value = readZeroPageIndirectY(cycles, memory, Y);
             loadIntoRegister(A, value);
             break;
         }
