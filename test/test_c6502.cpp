@@ -4,8 +4,8 @@ namespace c6502
 {
 TEST_CASE_METHOD(CpuFixture, "CPU and memory reset")
 {
-    REQUIRE(cpu.PC == 0xFFFC); // Reset vector
-    REQUIRE(cpu.SP == 0xFF);   // Top of the stack
+    REQUIRE(cpu.PC == startAddr); // Reset vector
+    REQUIRE(cpu.SP == 0xFF);      // Top of the stack
 
     REQUIRE(cpu.A == 0);
     REQUIRE(cpu.X == 0);
@@ -28,7 +28,11 @@ TEST_CASE_METHOD(CpuFixture, "CPU and memory reset")
 
     // Make sure that a reset is resetting everything correctly
     takeSnapshot();
-    cpu.reset(memory);
+    cpu.reset(memory, 0x2000);
+    cpuCopy.PC = 0x2000;
+
+    REQUIRE(cpu == cpuCopy);
+    REQUIRE(memory == memoryCopy);
 
     REQUIRE(cpu == cpuCopy);
     REQUIRE(memory == memoryCopy);
@@ -36,7 +40,7 @@ TEST_CASE_METHOD(CpuFixture, "CPU and memory reset")
 
 TEST_CASE_METHOD(CpuFixture, "No cycles")
 {
-    GIVEN("A reset CPU")
+    GIVEN("A reset system")
     {
         const s32 cyclesExpected = 0;
 
@@ -64,7 +68,7 @@ TEST_CASE_METHOD(CpuFixture, "NOP")
 {
     GIVEN("Next instruction is NOP")
     {
-        memory[0xFFFC] = Cpu::OP::NOP;
+        memory[startAddr] = Cpu::OP::NOP;
 
         const s32 PCIncrementsExpected = 1;
         const s32 cyclesExpected = 2;
@@ -91,7 +95,7 @@ TEST_CASE_METHOD(CpuFixture, "TXS")
     GIVEN("X is set and PC points to TXS")
     {
         cpu.X = 0x42;
-        memory[0xFFFC] = Cpu::OP::TXS;
+        memory[startAddr] = Cpu::OP::TXS;
 
         const s32 PCIncrementsExpected = 1;
         const s32 cyclesExpected = 2;

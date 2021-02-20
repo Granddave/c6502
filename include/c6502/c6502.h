@@ -201,7 +201,7 @@ struct Cpu
     std::string toString() const;
 
     /// Resets the CPU and memory to their initialized state
-    void reset(Memory& memory);
+    void reset(Memory& memory, const u16 startAddr);
 
     /// Reads a byte from specified address and increments the program counter
     u8 fetchByte(s32& cycles, const Memory& memory, const bool log = true);

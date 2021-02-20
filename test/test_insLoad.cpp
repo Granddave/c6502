@@ -24,8 +24,8 @@ public:
         {
             const u8 data = GENERATE(0x00, 0x42, 0xFF);
 
-            memory[0xFFFC] = opCode;
-            memory[0xFFFD] = data;
+            memory[0x1000] = opCode;
+            memory[0x1001] = data;
 
             const s32 cyclesExpected = 2;
             const s32 PCIncrementsExpected = 2;
@@ -55,8 +55,8 @@ public:
             const u16 zeroPageAddr = 0x0037;
             const u8 data = GENERATE(0x00, 0x42, 0xFF);
 
-            memory[0xFFFC] = opCode;
-            memory[0xFFFD] = zeroPageAddr;
+            memory[0x1000] = opCode;
+            memory[0x1001] = zeroPageAddr;
             memory[zeroPageAddr] = data;
 
             const s32 cyclesExpected = 3;
@@ -91,8 +91,8 @@ public:
             const u16 zeroPageAddrWithOffset = (zeroPageAddr + cpu.*offsetReg) & 0x00FF;
             const u8 data = GENERATE(0x00, 0x42, 0xFF);
 
-            memory[0xFFFC] = opCode;
-            memory[0xFFFD] = zeroPageAddr;
+            memory[0x1000] = opCode;
+            memory[0x1001] = zeroPageAddr;
             memory[zeroPageAddrWithOffset] = data;
 
             const s32 cyclesExpected = 4;
@@ -123,9 +123,9 @@ public:
             const u16 absoluteAddr = 0xABCD;
             const u8 data = GENERATE(0x00, 0x42, 0xFF);
 
-            memory[0xFFFC] = opCode;
-            memory[0xFFFD] = absoluteAddr & 0x00FF;
-            memory[0xFFFE] = (absoluteAddr >> 8) & 0x00FF;
+            memory[0x1000] = opCode;
+            memory[0x1001] = absoluteAddr & 0x00FF;
+            memory[0x1002] = (absoluteAddr >> 8) & 0x00FF;
             memory[absoluteAddr] = data;
 
             const s32 PCIncrementsExpected = 3;
@@ -158,9 +158,9 @@ public:
             const u16 effectiveAddr = absoluteAddr + cpu.*offsetReg;
             const u8 data = GENERATE(0x00, 0x42, 0xFF);
 
-            memory[0xFFFC] = opCode;
-            memory[0xFFFD] = absoluteAddr & 0x00FF;
-            memory[0xFFFE] = absoluteAddr >> 8;
+            memory[0x1000] = opCode;
+            memory[0x1001] = absoluteAddr & 0x00FF;
+            memory[0x1002] = absoluteAddr >> 8;
             memory[effectiveAddr] = data;
 
             const bool crossedPageBoundary = (absoluteAddr & 0xFF00) != (effectiveAddr & 0xFF00);
@@ -200,8 +200,8 @@ public:
             const u16 effectiveAddr = 0xABCD;
             const u8 data = 0x42;
 
-            memory[0xFFFC] = opCode;
-            memory[0xFFFD] = ZPAddr & 0x00FF;
+            memory[0x1000] = opCode;
+            memory[0x1001] = ZPAddr & 0x00FF;
             memory[indirectAddr] = effectiveAddr & 0x00FF;
             memory[indirectAddr + 1] = effectiveAddr >> 8;
             memory[effectiveAddr] = data;
@@ -240,8 +240,8 @@ public:
             const u16 effectiveAddr = indirectAddr + cpu.*offsetReg;
             const u8 data = 0x42;
 
-            memory[0xFFFC] = opCode;
-            memory[0xFFFD] = ZPAddr;
+            memory[0x1000] = opCode;
+            memory[0x1001] = ZPAddr;
             memory[ZPAddr] = indirectAddr & 0x00FF;
             memory[ZPAddr + 1] = indirectAddr >> 8;
             memory[effectiveAddr] = data;

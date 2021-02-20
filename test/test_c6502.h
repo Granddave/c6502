@@ -13,9 +13,12 @@ public:
     Cpu cpuCopy;
     Memory memoryCopy;
 
+    /// Initialize the memory with an arbitrary start address
+    static constexpr u16 startAddr = 0x1000;
+
     CpuFixture()
     {
-        cpu.reset(memory);
+        cpu.reset(memory, startAddr);
     }
 
     /// Takes a snapshot of the CPU and memory for later comparisons

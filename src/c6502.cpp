@@ -24,17 +24,15 @@ std::string Cpu::toString() const
     return ss.str();
 }
 
-void Cpu::reset(Memory& memory)
+void Cpu::reset(Memory& memory, const u16 startAddr)
 {
     std::cout << "-- CPU reset --" << std::endl;
     memory.initialize();
 
-    // memory[c_reset_vector] = 0x00;
-    // memory[c_reset_vector + 1] = 0x10;
+    memory[c_reset_vector] = startAddr & 0xFF;
+    memory[c_reset_vector + 1] = startAddr << 8;
 
-    // PC = (memory[c_reset_vector + 1] << 8) | memory[c_reset_vector];
-    // TODO: Start executing from where reset vector points instead reset vector
-    PC = c_reset_vector;
+    PC = startAddr;
     SP = c_stack_top;
 
     A = 0;
