@@ -109,7 +109,7 @@ struct Cpu
         NOP = 0xEA,
 
         // Utilize an unused OpCode as a stop signal for testing purposes
-        STOP_EMULATING = 0xFF
+        HALT = 0xFF
     };
 
     static std::string OpCodeToString(const u8 opCode)
@@ -160,8 +160,8 @@ struct Cpu
                 return "TXS";
             case OP::NOP:
                 return "NOP";
-            case OP::STOP_EMULATING:
-                return "STOP_EMULATING";
+            case OP::HALT:
+                return "HALT";
         }
 
         throw InvalidOpCode(opCode);

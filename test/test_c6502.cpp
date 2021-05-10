@@ -68,7 +68,7 @@ TEST_CASE_METHOD(CpuFixture, "NOP")
     GIVEN("Next instruction is NOP")
     {
         memory[0x1000] = Cpu::OP::NOP;
-        memory[0x1001] = Cpu::OP::STOP_EMULATING;
+        memory[0x1001] = Cpu::OP::HALT;
 
         const s32 PCIncrementsExpected = 1;
         const s32 cyclesExpected = 2;
@@ -96,7 +96,7 @@ TEST_CASE_METHOD(CpuFixture, "TXS")
     {
         cpu.X = 0x42;
         memory[0x1000] = Cpu::OP::TXS;
-        memory[0x1001] = Cpu::OP::STOP_EMULATING;
+        memory[0x1001] = Cpu::OP::HALT;
 
         const s32 PCIncrementsExpected = 1;
         const s32 cyclesExpected = 2;

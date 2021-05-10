@@ -239,7 +239,7 @@ bool Cpu::executeInstruction(const OP opCode)
             m_cycles++;
             break;
         }
-        case OP::STOP_EMULATING:
+        case OP::HALT:
         {
             // Don't register the fetch for this instruction
             m_cycles--;
