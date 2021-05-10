@@ -2,75 +2,72 @@
 
 namespace c6502
 {
-u8 Cpu::readImmediate(s32& cycles, Memory& memory)
+u8 Cpu::readImmediate()
 {
-    return fetchByte(cycles, memory);
+    return fetchByte();
 }
 
-u8 Cpu::readZeroPage(s32& cycles, Memory& memory)
+u8 Cpu::readZeroPage()
 {
-    const u8 ZPAddr = fetchByte(cycles, memory);
-    return readByte(cycles, ZPAddr, memory);
+    const u8 ZPAddr = fetchByte();
+    return readByte(ZPAddr);
 }
 
-u8 Cpu::readZeroPageOffset(s32& cycles, Memory& memory, u8& offsetReg)
+u8 Cpu::readZeroPageOffset(u8& offsetReg)
 {
-    const u8 ZPAddr = fetchByte(cycles, memory);
+    const u8 ZPAddr = fetchByte();
 
     /// Should handle wrap around automatically since both are u8's
     const u8 ZPAddrWithOffset = ZPAddr + offsetReg;
-    cycles--;
+    m_cycles++;
 
-    return readByte(cycles, ZPAddrWithOffset, memory);
+    return readByte(ZPAddrWithOffset);
 }
 
-u8 Cpu::readAbsolute(s32& cycles, Memory& memory)
+u8 Cpu::readAbsolute()
 {
-    const u16 absoluteAddr = fetchWord(cycles, memory);
-    return readByte(cycles, absoluteAddr, memory);
+    const u16 absoluteAddr = fetchWord();
+    return readByte(absoluteAddr);
 }
 
-u8 Cpu::readAbsoluteOffset(s32& cycles, Memory& memory, u8& offsetReg)
+u8 Cpu::readAbsoluteOffset(u8& offsetReg)
 {
-    const u16 absoluteAddr = fetchWord(cycles, memory);
+    const u16 absoluteAddr = fetchWord();
     const u16 effectiveAddr = absoluteAddr + offsetReg;
 
     const bool crossedPageBoundary = (absoluteAddr & 0xFF00) != (effectiveAddr & 0xFF00);
     if (crossedPageBoundary)
     {
-        cycles--;
+        m_cycles++;
     }
 
-    return readByte(cycles, effectiveAddr, memory);
+    return readByte(effectiveAddr);
 }
 
-u8 Cpu::readZeroPageIndirectX(s32& cycles, Memory& memory, const u8& offset)
+u8 Cpu::readZeroPageIndirectX(const u8& offset)
 {
-    const u8 ZPAddr = fetchByte(cycles, memory);
+    const u8 ZPAddr = fetchByte();
     const u8 indirectAddr = ZPAddr + offset;
-    cycles--; // TODO: Is this placement correct?
+    m_cycles++; // TODO: Is this placement correct?
 
-    const u16 effectiveAddr = readWord(cycles, indirectAddr, memory);
+    const u16 effectiveAddr = readWord(indirectAddr);
 
-    return readByte(cycles, effectiveAddr, memory);
+    return readByte(effectiveAddr);
 }
 
-u8 Cpu::readZeroPageIndirectY(s32& cycles,
-                              Memory& memory,
-                              const u8& offset,
-                              const bool alwaysAddExtraCycle)
+u8 Cpu::readZeroPageIndirectY(const u8& offset, const bool alwaysAddExtraCycle)
 {
-    const u8 ZPAddr = fetchByte(cycles, memory);
-    const u16 indirectAddr = readWord(cycles, ZPAddr, memory);
+    const u8 ZPAddr = fetchByte();
+    const u16 indirectAddr = readWord(ZPAddr);
     const u16 effectiveAddr = indirectAddr + offset;
 
     const bool crossedPageBoundary = (indirectAddr & 0xFF00) != (effectiveAddr & 0xFF00);
     if (crossedPageBoundary || alwaysAddExtraCycle)
     {
-        cycles--;
+        m_cycles++;
     }
 
-    return readByte(cycles, effectiveAddr, memory);
+    return readByte(effectiveAddr);
 }
 
 }; // namespace c6502

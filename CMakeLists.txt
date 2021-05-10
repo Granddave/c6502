@@ -23,7 +23,7 @@ add_executable(c6502-test
     ${CMAKE_CURRENT_SOURCE_DIR}/test/test_main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/test_c6502.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/test_c6502.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/test_insLoad.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test/test_insLoad.cpp
 )
 target_link_libraries(c6502-test PRIVATE
     c6502

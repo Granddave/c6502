@@ -24,13 +24,19 @@ std::string Cpu::toString() const
     return ss.str();
 }
 
-void Cpu::reset(Memory& memory, const u16 startAddr)
+void Cpu::setMemory(std::shared_ptr<Memory> memory)
+{
+    m_memory = memory;
+}
+
+void Cpu::reset(const u16 startAddr)
 {
     std::cout << "-- CPU reset --" << std::endl;
-    memory.initialize();
 
-    memory[c_reset_vector] = startAddr & 0xFF;
-    memory[c_reset_vector + 1] = startAddr << 8;
+    // TODO: FIX
+    //m_memory.reset();
+    //m_memory[c_reset_vector] = startAddr & 0xFF;
+    //m_memory[c_reset_vector + 1] = startAddr << 8;
 
     PC = startAddr;
     SP = c_stack_top;
@@ -42,9 +48,10 @@ void Cpu::reset(Memory& memory, const u16 startAddr)
     SR = 0;
 }
 
-u8 Cpu::fetchByte(s32& cycles, const Memory& memory, const bool log)
+u8 Cpu::fetchByte(const bool log)
 {
-    const u8 data = memory[PC];
+    const u8 data = 0;
+    //const u8 data = m_memory[PC];
     if (log)
     {
         std::cout << "FetchB: " << std::hex << unsigned(PC) << ": " << std::hex << unsigned(data)
@@ -52,16 +59,16 @@ u8 Cpu::fetchByte(s32& cycles, const Memory& memory, const bool log)
     }
 
     PC++;
-    cycles--;
+    m_cycles++;
 
     return data;
 }
 
-u16 Cpu::fetchWord(s32& cycles, const Memory& memory)
+u16 Cpu::fetchWord()
 {
     const bool log = false;
-    const u8 lowByte = fetchByte(cycles, memory, log);
-    const u8 highByte = fetchByte(cycles, memory, log);
+    const u8 lowByte = fetchByte(log);
+    const u8 highByte = fetchByte(log);
     const u16 data = (highByte << 8) | lowByte;
 
     std::cout << "FetchW: " << std::hex << unsigned(PC) << "+1: " << std::hex << unsigned(data)
@@ -70,24 +77,24 @@ u16 Cpu::fetchWord(s32& cycles, const Memory& memory)
     return data;
 }
 
-u8 Cpu::readByte(s32& cycles, const u16 address, const Memory& memory, const bool log)
+u8 Cpu::readByte(const u16 address, const bool log)
 {
-    const u8 data = memory[address];
+    const u8 data = 0;//m_memory[address];
     if (log)
     {
         std::cout << "ReadB : " << std::hex << unsigned(address) << ": " << std::hex
                   << unsigned(data) << std::endl;
     }
-    cycles--;
+    m_cycles++;
 
     return data;
 }
 
-u16 Cpu::readWord(s32& cycles, const u16 address, const Memory& memory)
+u16 Cpu::readWord(const u16 address)
 {
     const bool log = false;
-    const u8 lowByte = readByte(cycles, address, memory, log);
-    const u8 highByte = readByte(cycles, address + 1, memory, log);
+    const u8 lowByte = readByte(address, log);
+    const u8 highByte = readByte(address + 1,log);
     const u16 data = (highByte << 8) | lowByte;
 
     std::cout << "ReadW : " << std::hex << unsigned(address) << ": " << std::hex << unsigned(data)
@@ -108,166 +115,160 @@ void Cpu::loadIntoRegister(u8& reg, const u8 value)
     loadIntoRegister(reg, value, reg);
 }
 
-void Cpu::executeInstruction(const OP opCode, s32& cycles, Memory& memory)
+bool Cpu::executeInstruction(const OP opCode)
 {
     std::cout << "Ins   : " << OpCodeToString(opCode) << '\n';
     switch (opCode)
     {
         case OP::LDA_IM:
         {
-            const u8 value = readImmediate(cycles, memory);
+            const u8 value = readImmediate();
             loadIntoRegister(A, value);
             break;
         }
         case OP::LDA_ZP:
         {
-            const u8 value = readZeroPage(cycles, memory);
+            const u8 value = readZeroPage();
             loadIntoRegister(A, value);
             break;
         }
         case OP::LDA_ZPX:
         {
-            const u8 value = readZeroPageOffset(cycles, memory, X);
+            const u8 value = readZeroPageOffset(X);
             loadIntoRegister(A, value);
             break;
         }
         case OP::LDA_ABS:
         {
-            const u8 value = readAbsolute(cycles, memory);
+            const u8 value = readAbsolute();
             loadIntoRegister(A, value);
             break;
         }
         case OP::LDA_ABSX:
         {
-            const u8 value = readAbsoluteOffset(cycles, memory, X);
+            const u8 value = readAbsoluteOffset(X);
             loadIntoRegister(A, value);
             break;
         }
         case OP::LDA_ABSY:
         {
-            const u8 value = readAbsoluteOffset(cycles, memory, Y);
+            const u8 value = readAbsoluteOffset(Y);
             loadIntoRegister(A, value);
             break;
         }
         case OP::LDA_IND_ZPX:
         {
-            const u8 value = readZeroPageIndirectX(cycles, memory, X);
+            const u8 value = readZeroPageIndirectX(X);
             loadIntoRegister(A, value);
             break;
         }
         case OP::LDA_IND_ZPY:
         {
-            const u8 value = readZeroPageIndirectY(cycles, memory, Y);
+            const u8 value = readZeroPageIndirectY(Y);
             loadIntoRegister(A, value);
             break;
         }
         case OP::LDX_IM:
         {
-            const u8 value = readImmediate(cycles, memory);
+            const u8 value = readImmediate();
             loadIntoRegister(X, value);
             break;
         }
         case OP::LDX_ZP:
         {
-            const u8 value = readZeroPage(cycles, memory);
+            const u8 value = readZeroPage();
             loadIntoRegister(X, value);
             break;
         }
         case OP::LDX_ZPY:
         {
-            const u8 value = readZeroPageOffset(cycles, memory, Y);
+            const u8 value = readZeroPageOffset(Y);
             loadIntoRegister(X, value);
             break;
         }
         case OP::LDX_ABS:
         {
-            const u8 value = readAbsolute(cycles, memory);
+            const u8 value = readAbsolute();
             loadIntoRegister(X, value);
             break;
         }
         case OP::LDX_ABSY:
         {
-            const u8 value = readAbsoluteOffset(cycles, memory, Y);
+            const u8 value = readAbsoluteOffset(Y);
             loadIntoRegister(X, value);
             break;
         }
         case OP::LDY_IM:
         {
-            const u8 value = readImmediate(cycles, memory);
+            const u8 value = readImmediate();
             loadIntoRegister(Y, value);
             break;
         }
         case OP::LDY_ZP:
         {
-            const u8 value = readZeroPage(cycles, memory);
+            const u8 value = readZeroPage();
             loadIntoRegister(Y, value);
             break;
         }
         case OP::LDY_ZPX:
         {
-            const u8 value = readZeroPageOffset(cycles, memory, X);
+            const u8 value = readZeroPageOffset(X);
             loadIntoRegister(Y, value);
             break;
         }
         case OP::LDY_ABS:
         {
-            const u8 value = readAbsolute(cycles, memory);
+            const u8 value = readAbsolute();
             loadIntoRegister(Y, value);
             break;
         }
         case OP::LDY_ABSX:
         {
-            const u8 value = readAbsoluteOffset(cycles, memory, X);
+            const u8 value = readAbsoluteOffset(X);
             loadIntoRegister(Y, value);
             break;
         }
         case OP::TXS:
         {
             SP = X;
-            cycles--;
+            m_cycles++;
             break;
         }
         case OP::NOP:
         {
-            cycles--;
+            m_cycles++;
             break;
+        }
+        case OP::STOP_EMULATING:
+        {
+            // Don't register the fetch for this instruction
+            m_cycles--;
+            return false;
         }
         default:
         {
             throw InvalidOpCode(opCode);
         }
     }
+
+    return true;
 }
 
-s32 Cpu::execute(s32 cycles, Memory& memory)
+s32 Cpu::execute()
 {
-    const s32 requestedCycles = cycles;
+    m_cycles = 0;
 
-    while (cycles > 0)
+    bool continueExecuting = true;
+    while (continueExecuting)
     {
         // Fetch instruction from memory
-        const u8 byte = fetchByte(cycles, memory);
+        const u8 byte = fetchByte();
         const auto ins = static_cast<OP>(byte);
 
-        executeInstruction(ins, cycles, memory);
+        continueExecuting = executeInstruction(ins);
     }
 
-    const s32 executedCycles = requestedCycles - cycles;
-    return executedCycles;
-}
-
-void Cpu::executeInfinite(Memory& memory)
-{
-    while (true)
-    {
-        s32 dummyCycles = 0xFF;
-
-        // Fetch instruction from memory
-        const u8 byte = fetchByte(dummyCycles, memory);
-        const auto ins = static_cast<OP>(byte);
-
-        executeInstruction(ins, dummyCycles, memory);
-    }
+    return m_cycles;
 }
 
 } // namespace c6502

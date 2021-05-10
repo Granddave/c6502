@@ -23,21 +23,19 @@ TEST_CASE_METHOD(CpuFixture, "CPU and memory reset")
     REQUIRE(cpu.N == 0);
 
     // Check that memory is initialized to zeros
-    const int sumOfAllAdresses = std::accumulate(std::begin(memory.data), std::end(memory.data), 0);
+    const int sumOfAllAdresses = std::accumulate(std::begin(memory->data), std::end(memory->data), 0);
     REQUIRE(sumOfAllAdresses == 0);
 
     // Make sure that a reset is resetting everything correctly
     takeSnapshot();
-    cpu.reset(memory, 0x2000);
+    cpu.reset(0x2000);
     cpuCopy.PC = 0x2000;
 
     REQUIRE(cpu == cpuCopy);
-    REQUIRE(memory == memoryCopy);
-
-    REQUIRE(cpu == cpuCopy);
-    REQUIRE(memory == memoryCopy);
+    REQUIRE(*memory == *memoryCopy);
 }
 
+#if 0
 TEST_CASE_METHOD(CpuFixture, "No cycles")
 {
     GIVEN("A reset system")
@@ -48,7 +46,7 @@ TEST_CASE_METHOD(CpuFixture, "No cycles")
 
         WHEN("No cycles is executed")
         {
-            const s32 cyclesUsed = cpu.execute(cyclesExpected, memory);
+            const s32 cyclesUsed = cpu.execute();
 
             THEN("Nothing happens")
             {
@@ -58,17 +56,19 @@ TEST_CASE_METHOD(CpuFixture, "No cycles")
         }
     }
 }
+#endif
 
 TEST_CASE_METHOD(CpuFixture, "Execute invalid instruction result in exception")
 {
-    REQUIRE_THROWS_AS(cpu.execute(1, memory), InvalidOpCode);
+    REQUIRE_THROWS_AS(cpu.execute(), InvalidOpCode);
 }
 
 TEST_CASE_METHOD(CpuFixture, "NOP")
 {
     GIVEN("Next instruction is NOP")
     {
-        memory[startAddr] = Cpu::OP::NOP;
+        memory[0x1000] = Cpu::OP::NOP;
+        memory[0x1001] = Cpu::OP::STOP_EMULATING;
 
         const s32 PCIncrementsExpected = 1;
         const s32 cyclesExpected = 2;
@@ -77,7 +77,7 @@ TEST_CASE_METHOD(CpuFixture, "NOP")
 
         WHEN("NOP is executed")
         {
-            const s32 cyclesUsed = cpu.execute(cyclesExpected, memory);
+            const s32 cyclesUsed = cpu.execute();
 
             THEN("Program counter is incremented")
             {
@@ -95,7 +95,8 @@ TEST_CASE_METHOD(CpuFixture, "TXS")
     GIVEN("X is set and PC points to TXS")
     {
         cpu.X = 0x42;
-        memory[startAddr] = Cpu::OP::TXS;
+        memory[0x1000] = Cpu::OP::TXS;
+        memory[0x1001] = Cpu::OP::STOP_EMULATING;
 
         const s32 PCIncrementsExpected = 1;
         const s32 cyclesExpected = 2;
@@ -104,7 +105,7 @@ TEST_CASE_METHOD(CpuFixture, "TXS")
 
         WHEN("TXS is executed")
         {
-            const s32 cyclesUsed = cpu.execute(cyclesExpected, memory);
+            const s32 cyclesUsed = cpu.execute();
 
             THEN("Program counter is incremented and SP = X")
             {

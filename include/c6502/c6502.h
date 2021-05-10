@@ -5,13 +5,14 @@
 #include <iostream>
 #include <sstream>
 
+#include <memory>
+
 namespace c6502
 {
-using u32 = std::uint32_t;
-using s32 = std::int32_t;
-
 using u8 = std::uint8_t;
 using u16 = std::uint16_t;
+using u32 = std::uint32_t;
+using s32 = std::int32_t;
 
 struct Memory
 {
@@ -38,7 +39,7 @@ struct Memory
         return data.at(pos);
     }
 
-    void initialize()
+    void reset()
     {
         std::fill(std::begin(data), std::end(data), 0);
     }
@@ -105,7 +106,10 @@ struct Cpu
         LDY_ABS = 0xAC,
         LDY_ABSX = 0xBC,
         TXS = 0x9A,
-        NOP = 0xEA
+        NOP = 0xEA,
+
+        // Utilize an unused OpCode as a stop signal for testing purposes
+        STOP_EMULATING = 0xFF
     };
 
     static std::string OpCodeToString(const u8 opCode)
@@ -156,10 +160,17 @@ struct Cpu
                 return "TXS";
             case OP::NOP:
                 return "NOP";
+            case OP::STOP_EMULATING:
+                return "STOP_EMULATING";
         }
 
         throw InvalidOpCode(opCode);
     }
+
+    /// Cycles counter for testing purposes
+    u32 m_cycles = 0;
+
+    std::shared_ptr<Memory> m_memory;
 
     /* The value of program counter is modified automatically as instructions are executed.
      * The value of the program counter can be modified by executing a jump, a relative branch
@@ -201,42 +212,40 @@ struct Cpu
     std::string toString() const;
 
     /// Resets the CPU and memory to their initialized state
-    void reset(Memory& memory, const u16 startAddr);
+    void setMemory(std::shared_ptr<Memory> memory);
+
+    /// Resets the CPU and memory to their initialized state
+    void reset(const u16 startAddr);
 
     /// Reads a byte from specified address and increments the program counter
-    u8 fetchByte(s32& cycles, const Memory& memory, const bool log = true);
+    u8 fetchByte(const bool log = true);
 
     /// Reads a 16 bit word from specified address and increments the program counter
-    u16 fetchWord(s32& cycles, const Memory& memory);
+    u16 fetchWord();
 
     /// Reads a byte from address
-    u8 readByte(s32& cycles, const u16 address, const Memory& memory, const bool log = true);
+    u8 readByte(const u16 address, const bool log = true);
 
     /// Reads a 16 bit word from address
-    u16 readWord(s32& cycles, const u16 address, const Memory& memory);
+    u16 readWord(const u16 address);
 
     void loadIntoRegister(u8& reg, const u8 value, const u8& zeroFlagReg);
     void loadIntoRegister(u8& reg, const u8 value);
 
-    u8 readImmediate(s32& cycles, Memory& memory);
-    u8 readZeroPage(s32& cycles, Memory& memory);
-    u8 readZeroPageOffset(s32& cycles, Memory& memory, u8& offsetReg);
-    u8 readAbsolute(s32& cycles, Memory& memory);
-    u8 readAbsoluteOffset(s32& cycles, Memory& memory, u8& offsetReg); // TODO: Const offsetReg
-    u8 readZeroPageIndirectX(s32& cycles, Memory& memory, const u8& offsetReg);
-    u8 readZeroPageIndirectY(s32& cycles,
-                             Memory& memory,
-                             const u8& offsetReg,
-                             const bool alwaysAddExtraCycle = false);
+    /// Addressing modes
+    u8 readImmediate();
+    u8 readZeroPage();
+    u8 readZeroPageOffset(u8& offsetReg);
+    u8 readAbsolute();
+    u8 readAbsoluteOffset(u8& offsetReg); // TODO: Const offsetReg
+    u8 readZeroPageIndirectX(const u8& offsetReg);
+    u8 readZeroPageIndirectY(const u8& offsetReg, const bool alwaysAddExtraCycle = false);
 
     /// Executes an instruction
-    void executeInstruction(const OP opCode, s32& cycles, Memory& memory);
-
-    /// Executes n cycles
-    s32 execute(s32 cycles, Memory& memory);
+    bool executeInstruction(const OP opCode);
 
     /// Executes in an infinite loop
-    void executeInfinite(Memory& memory);
+    s32 execute();
 };
 
 inline bool operator==(const Cpu& lhs, const Cpu& rhs)

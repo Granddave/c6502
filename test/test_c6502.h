@@ -18,7 +18,7 @@ public:
 
     CpuFixture()
     {
-        cpu.reset(memory, startAddr);
+        cpu.reset(startAddr);
     }
 
     /// Takes a snapshot of the CPU and memory for later comparisons

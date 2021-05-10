@@ -34,7 +34,7 @@ public:
 
             WHEN(Cpu::OpCodeToString(opCode) + " is executed")
             {
-                const s32 cyclesUsed = cpu.execute(cyclesExpected, memory);
+                const s32 cyclesUsed = cpu.execute();
 
                 THEN("Constant is loaded into index register")
                 {
@@ -66,7 +66,7 @@ public:
 
             WHEN(Cpu::OpCodeToString(opCode) + " is executed")
             {
-                const s32 cyclesUsed = cpu.execute(cyclesExpected, memory);
+                const s32 cyclesUsed = cpu.execute();
 
                 THEN("ZeroPage data is loaded into index register")
                 {
@@ -102,7 +102,7 @@ public:
 
             WHEN(Cpu::OpCodeToString(opCode) + " is executed")
             {
-                const s32 cyclesUsed = cpu.execute(cyclesExpected, memory);
+                const s32 cyclesUsed = cpu.execute();
 
                 THEN("ZeroPage + offset addressed data is loaded into index register")
                 {
@@ -135,7 +135,7 @@ public:
 
             WHEN(Cpu::OpCodeToString(opCode) + " is executed")
             {
-                const s32 cyclesUsed = cpu.execute(cyclesExpected, memory);
+                const s32 cyclesUsed = cpu.execute();
 
                 THEN("Absolute addressed data is loaded into index register")
                 {
@@ -172,7 +172,7 @@ public:
 
             WHEN(Cpu::OpCodeToString(opCode) + " is executed")
             {
-                const s32 cyclesUsed = cpu.execute(cyclesExpected, memory);
+                const s32 cyclesUsed = cpu.execute();
 
                 THEN("Absolute + offset addressed data is loaded into index register")
                 {
@@ -213,7 +213,7 @@ public:
 
             WHEN(Cpu::OpCodeToString(opCode) + " is executed")
             {
-                const s32 cyclesUsed = cpu.execute(cyclesExpected, memory);
+                const s32 cyclesUsed = cpu.execute();
 
                 THEN("Indirect + offset addressed data is loaded into the A register")
                 {
@@ -255,7 +255,7 @@ public:
 
             WHEN(Cpu::OpCodeToString(opCode) + " is executed")
             {
-                const s32 cyclesUsed = cpu.execute(cyclesExpected, memory);
+                const s32 cyclesUsed = cpu.execute();
 
                 THEN("Indirect + offset addressed data is loaded into the A register")
                 {
