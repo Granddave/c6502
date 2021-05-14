@@ -1,11 +1,12 @@
+#pragma once
+
 #include <array>
 #include <cassert>
 #include <cstdint>
-#include <cstring>
 #include <iostream>
-#include <sstream>
-
 #include <memory>
+#include <sstream>
+#include <stdexcept>
 
 namespace c6502
 {
@@ -13,6 +14,8 @@ using u8 = std::uint8_t;
 using u16 = std::uint16_t;
 using u32 = std::uint32_t;
 using s32 = std::int32_t;
+
+#define KB (1024)
 
 struct Memory
 {
@@ -24,19 +27,29 @@ struct Memory
      * which cannot be relocated.
      */
 
-    static constexpr std::uint32_t MEM_MAX = 64 * 1024;
+    static constexpr std::size_t MEM_MAX = 64 * KB;
     std::array<u8, MEM_MAX> data;
 
-    u8& operator[](const std::size_t pos)
+    u8& at(const std::size_t offset)
     {
-        assert(pos < MEM_MAX);
-        return data.at(pos);
+        assert(offset < MEM_MAX);
+        return data.at(offset);
     }
 
-    u8 operator[](const std::size_t pos) const
+    u8 at(const std::size_t offset) const
     {
-        assert(pos < MEM_MAX);
-        return data.at(pos);
+        assert(offset < MEM_MAX);
+        return data.at(offset);
+    }
+
+    u8& operator[](const std::size_t offset)
+    {
+        return at(offset);
+    }
+
+    u8 operator[](const std::size_t offset) const
+    {
+        return at(offset);
     }
 
     void reset()
@@ -76,6 +89,10 @@ private:
 
 struct Cpu
 {
+    Cpu(Memory& memory) : m_memory(memory)
+    {
+    }
+
     static constexpr u16 c_nmi_vector = 0xFFFA;
     static constexpr u16 c_reset_vector = 0xFFFC;
     static constexpr u16 c_irq_vector = 0xFFFE;
@@ -169,14 +186,15 @@ struct Cpu
 
     /// Cycles counter for testing purposes
     u32 m_cycles = 0;
+    bool m_running = true;
 
-    std::shared_ptr<Memory> m_memory;
+    Memory& m_memory;
 
     /* The value of program counter is modified automatically as instructions are executed.
      * The value of the program counter can be modified by executing a jump, a relative branch
      * or a subroutine call to another memory address or by returning from a subroutine or
      * interrupt. */
-    u16 PC; // Program counter
+    u16 PC = 0; // Program counter
 
     /* The processor supports a 256 byte stack located between $0100 and $01FF.
      * The stack pointer is an 8 bit register and holds the low 8 bits of the next free
@@ -184,12 +202,12 @@ struct Cpu
      * The location of the stack is fixed and cannot be moved.
      * Pushing bytes to the stack causes the stack pointer to be decremented.
      * Conversely pulling bytes causes it to be incremented. */
-    u8 SP; // Stack pointer
+    u8 SP = 0; // Stack pointer
 
     /// Registers
-    u8 A; // Accumulator
-    u8 X; // Index register X
-    u8 Y; // Index register Y
+    u8 A = 0; // Accumulator
+    u8 X = 0; // Index register X
+    u8 Y = 0; // Index register Y
 
     /// Processor status register flags
     union
@@ -211,7 +229,6 @@ struct Cpu
     /// Returns a string representation of the CPU's registers
     std::string toString() const;
 
-    /// Resets the CPU and memory to their initialized state
     void setMemory(std::shared_ptr<Memory> memory);
 
     /// Resets the CPU and memory to their initialized state
@@ -242,7 +259,7 @@ struct Cpu
     u8 readZeroPageIndirectY(const u8& offsetReg, const bool alwaysAddExtraCycle = false);
 
     /// Executes an instruction
-    bool executeInstruction(const OP opCode);
+    void executeInstruction(const OP opCode);
 
     /// Executes in an infinite loop
     s32 execute();
@@ -260,5 +277,47 @@ inline bool operator!=(const Cpu& lhs, const Cpu& rhs)
 }
 
 std::ostream& operator<<(std::ostream& os, Cpu const& cpu);
+
+class Emulator
+{
+public:
+    Emulator() : m_cpu(m_memory)
+    {
+    }
+
+    Cpu& cpu()
+    {
+        return m_cpu;
+    }
+
+    const Cpu& cpu() const
+    {
+        return m_cpu;
+    }
+
+    Memory& memory()
+    {
+        return m_memory;
+    }
+
+    const Memory& memory() const
+    {
+        return m_memory;
+    }
+
+private:
+    Memory m_memory;
+    Cpu m_cpu;
+};
+
+inline bool operator==(const Emulator& lhs, const Emulator& rhs)
+{
+    return lhs.cpu() == rhs.cpu() && lhs.memory() == rhs.memory();
+}
+
+inline bool operator!=(const Emulator& lhs, const Emulator& rhs)
+{
+    return !(lhs == rhs);
+}
 
 } // namespace c6502

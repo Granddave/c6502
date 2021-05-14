@@ -23,7 +23,7 @@ TEST_CASE_METHOD(CpuFixture, "CPU and memory reset")
     REQUIRE(cpu.N == 0);
 
     // Check that memory is initialized to zeros
-    const int sumOfAllAdresses = std::accumulate(std::begin(memory->data), std::end(memory->data), 0);
+    const int sumOfAllAdresses = std::accumulate(std::begin(memory.data), std::end(memory.data), 0);
     REQUIRE(sumOfAllAdresses == 0);
 
     // Make sure that a reset is resetting everything correctly
@@ -32,7 +32,7 @@ TEST_CASE_METHOD(CpuFixture, "CPU and memory reset")
     cpuCopy.PC = 0x2000;
 
     REQUIRE(cpu == cpuCopy);
-    REQUIRE(*memory == *memoryCopy);
+    REQUIRE(memory == memoryCopy);
 }
 
 #if 0

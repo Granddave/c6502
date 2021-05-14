@@ -7,11 +7,11 @@ namespace c6502
 class CpuFixture
 {
 public:
-    Cpu cpu;
     Memory memory;
+    Cpu cpu;
 
-    Cpu cpuCopy;
     Memory memoryCopy;
+    Cpu cpuCopy;
 
     /// Initialize the memory with an arbitrary start address
     static constexpr u16 startAddr = 0x1000;
